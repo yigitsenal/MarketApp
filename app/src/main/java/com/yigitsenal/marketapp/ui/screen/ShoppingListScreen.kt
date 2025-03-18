@@ -91,6 +91,9 @@ fun ShoppingListScreen(
     val isSelectionMode by viewModel.isSelectionMode.collectAsState()
     val selectedItems by viewModel.selectedItems.collectAsState()
     
+    // Toplam maliyet hesaplama
+    val totalCost = items.sumOf { it.price }
+    
     // Silme işlemi için onay iletişim kutusu
     var showDeleteDialog by remember { mutableStateOf(false) }
     var itemToDelete by remember { mutableStateOf<ShoppingListItem?>(null) }
@@ -168,6 +171,35 @@ fun ShoppingListScreen(
                     contentDescription = "Ürün Ekle",
                     tint = Color.White
                 )
+            }
+        },
+        bottomBar = {
+            if (items.isNotEmpty()) {
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shadowElevation = 8.dp,
+                    color = MaterialTheme.colorScheme.surface
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Toplam Tutar:",
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = "₺${String.format("%.2f", totalCost)}",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
             }
         }
     ) { paddingValues ->
@@ -348,8 +380,8 @@ fun ShoppingListContent(
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(16.dp)
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        contentPadding = PaddingValues(8.dp)
     ) {
         items(items) { item ->
             ShoppingListItemRow(
@@ -358,7 +390,7 @@ fun ShoppingListContent(
                 isSelectionMode = isSelectionMode,
                 onItemClick = { onItemClick(item) },
                 onItemLongClick = { onItemLongClick(item) },
-                onItemDelete = { onItemDelete(item) }
+                onDeleteClick = { onItemDelete(item) }
             )
         }
     }
@@ -372,43 +404,53 @@ fun ShoppingListItemRow(
     isSelectionMode: Boolean,
     onItemClick: () -> Unit,
     onItemLongClick: () -> Unit,
-    onItemDelete: () -> Unit,
+    onDeleteClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .combinedClickable(
-                onClick = onItemClick,
-                onLongClick = onItemLongClick
-            ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(12.dp),
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.surface
+            containerColor = when {
+                isSelected -> Color(0xFFE3F2FD)
+                item.isCompleted -> Color(0xFFF5F5F5)
+                else -> Color.White
             }
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .combinedClickable(
+                    onClick = onItemClick,
+                    onLongClick = onItemLongClick
+                )
                 .padding(12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Sol taraf: Checkbox, ürün görseli ve bilgileri
             Row(
                 modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (isSelectionMode) {
                     Checkbox(
                         checked = isSelected,
-                        onCheckedChange = { onItemClick() }
+                        onCheckedChange = { onItemClick() },
+                        modifier = Modifier.padding(end = 4.dp)
                     )
-                } else {
+                }
+
+                // Ürün görseli
+                Card(
+                    shape = RoundedCornerShape(12.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                ) {
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
                             .data(item.imageUrl)
@@ -416,82 +458,98 @@ fun ShoppingListItemRow(
                             .build(),
                         contentDescription = item.name,
                         modifier = Modifier
-                            .size(48.dp)
-                            .clip(RoundedCornerShape(8.dp)),
+                            .size(72.dp)
+                            .clip(RoundedCornerShape(12.dp)),
                         contentScale = ContentScale.Crop,
                         placeholder = painterResource(id = R.drawable.placeholder_image),
                         error = painterResource(id = R.drawable.placeholder_image)
                     )
                 }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column {
+
+                // Ürün bilgileri
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Ürün adı
                     Text(
                         text = item.name,
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Medium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (item.isCompleted) Color.Gray else Color.Black,
                         textDecoration = if (item.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
-                        color = if (item.isCompleted) {
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                        } else {
-                            MaterialTheme.colorScheme.onSurface
-                        }
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                     )
-                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // Miktar ve mağaza logosu
                     Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "${item.quantity.toInt()} ${item.unit}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textDecoration = if (item.isCompleted) TextDecoration.LineThrough else TextDecoration.None
-                        )
-                        Box(
-                            modifier = Modifier
-                                .background(
-                                    color = MaterialTheme.colorScheme.primaryContainer,
-                                    shape = RoundedCornerShape(4.dp)
-                                )
-                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        // Miktar gösterimi
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer
+                            ),
+                            shape = RoundedCornerShape(8.dp)
                         ) {
                             Text(
                                 text = "${item.quantity.toInt()} adet",
                                 style = MaterialTheme.typography.bodyMedium,
                                 fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                            )
+                        }
+
+                        // Mağaza logosu
+                        Card(
+                            shape = RoundedCornerShape(8.dp),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                            colors = CardDefaults.cardColors(containerColor = Color.White)
+                        ) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(item.merchantLogo)
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .padding(4.dp),
+                                contentScale = ContentScale.Fit,
+                                placeholder = painterResource(id = R.drawable.placeholder_image),
+                                error = painterResource(id = R.drawable.placeholder_image)
                             )
                         }
                     }
                 }
             }
-            
+
+            // Sağ taraf: Fiyat ve silme butonu
             Column(
                 horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                // Fiyat
                 Text(
-                    text = "₺${String.format("%.2f", item.quantity * item.unitPrice)}",
+                    text = "₺${String.format("%.2f", item.price)}",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    color = if (item.isCompleted) {
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
-                    } else {
-                        MaterialTheme.colorScheme.primary
-                    },
+                    fontWeight = FontWeight.Bold,
+                    color = if (item.isCompleted) Color.Gray else PrimaryColor,
                     textDecoration = if (item.isCompleted) TextDecoration.LineThrough else TextDecoration.None
                 )
+
+                // Silme butonu
                 if (!isSelectionMode) {
                     IconButton(
-                        onClick = onItemDelete,
-                        modifier = Modifier.size(24.dp)
+                        onClick = onDeleteClick,
+                        modifier = Modifier.size(32.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Delete,
                             contentDescription = "Sil",
-                            tint = Color.Red.copy(alpha = 0.8f),
+                            tint = Color.Red.copy(alpha = 0.7f),
                             modifier = Modifier.size(20.dp)
                         )
                     }

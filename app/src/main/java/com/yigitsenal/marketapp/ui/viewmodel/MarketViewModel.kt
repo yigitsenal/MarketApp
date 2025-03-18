@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.yigitsenal.marketapp.data.model.MarketItem
+import com.yigitsenal.marketapp.data.model.Offer
 import com.yigitsenal.marketapp.data.model.ProductDetailResponse
 import com.yigitsenal.marketapp.data.repository.MarketRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,6 +15,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.update
 
 class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
 
@@ -34,6 +36,10 @@ class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
     // API'den ürün yükleniyor mu durumunu tutacak state
     private val _isLoadingProductDetails = MutableStateFlow(false)
     val isLoadingProductDetails: StateFlow<Boolean> = _isLoadingProductDetails
+
+    // Sıralama seçeneği için state
+    private val _sortOption = MutableStateFlow<String?>(null)
+    val sortOption: StateFlow<String?> = _sortOption
 
     private var searchJob: Job? = null
     private var productDetailJob: Job? = null
@@ -68,25 +74,14 @@ class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
     }
 
     private fun searchProducts() {
-        viewModelScope.launch {
+        searchJob?.cancel()
+        searchJob = viewModelScope.launch {
             try {
                 _uiState.value = MarketUiState.Loading
-
-                // Türkçe karakterleri düzelt
-                val searchQuery = _newItemText.value.replace('ı', 'i')
-                    .replace('ğ', 'g')
-                    .replace('ü', 'u')
-                    .replace('ş', 's')
-                    .replace('ö', 'o')
-                    .replace('ç', 'c')
-                    .replace('İ', 'I')
-                    .replace('Ğ', 'G')
-                    .replace('Ü', 'U')
-                    .replace('Ş', 'S')
-                    .replace('Ö', 'O')
-                    .replace('Ç', 'C')
-
-                val response = repository.searchProducts(searchQuery)
+                val response = repository.searchProducts(
+                    query = _newItemText.value,
+                    sort = _sortOption.value
+                )
                 _uiState.value = MarketUiState.Success(response.products)
             } catch (e: Exception) {
                 Log.e("MarketViewModel", "Error searching products", e)
@@ -97,6 +92,16 @@ class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
 
     fun updateNewItemText(text: String) {
         _newItemText.value = text
+    }
+
+    // Sıralama seçeneğini güncellemek için fonksiyon
+    fun updateSortOption(sort: String?) {
+        _sortOption.value = sort
+        if (_newItemText.value.isNotEmpty()) {
+            searchProducts()
+        } else {
+            loadItems()
+        }
     }
 
     // Seçilen ürünü güncellemek için metodu ekleyelim
@@ -131,8 +136,26 @@ class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
                 val detailResponse = repository.getProductDetails(path)
                 Log.d("MarketViewModel", "Product details loaded successfully: ${detailResponse.product.name}")
                 
-                // Ürün detaylarını state'e kaydet
-                _productDetails.value = detailResponse
+                // Satıcıları fiyata göre sırala
+                val sortedResponse = detailResponse.copy(
+                    product = detailResponse.product.copy(
+                        offers = detailResponse.product.offers.sortedBy { it.price }
+                    )
+                )
+                
+                // Sıralanmış ürün detaylarını state'e kaydet
+                _productDetails.value = sortedResponse
+                
+                // Seçili ürünü en ucuz fiyatlı satıcının bilgileriyle güncelle
+                val cheapestOffer = sortedResponse.product.offers.firstOrNull()
+                if (cheapestOffer != null) {
+                    _selectedProduct.value = _selectedProduct.value?.copy(
+                        price = cheapestOffer.price,
+                        unit_price = cheapestOffer.unit_price,
+                        merchant_id = cheapestOffer.merchant_id.toString(),
+                        merchant_logo = cheapestOffer.merchant_logo
+                    )
+                }
                 
             } catch (e: Exception) {
                 Log.e("MarketViewModel", "Error loading product details", e)
@@ -164,6 +187,17 @@ class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
             viewModelScope.launch {
                 repository.updateItem(item.copy(quantity = quantity))
             }
+        }
+    }
+
+    fun updateSelectedProductWithOffer(offer: Offer) {
+        _selectedProduct.update { currentProduct ->
+            currentProduct?.copy(
+                price = offer.price,
+                unit_price = offer.unit_price,
+                merchant_id = offer.merchant_id.toString(),
+                merchant_logo = offer.merchant_logo
+            )
         }
     }
 }

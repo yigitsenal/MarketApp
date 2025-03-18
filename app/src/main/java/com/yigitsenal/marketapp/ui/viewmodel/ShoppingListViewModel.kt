@@ -122,15 +122,7 @@ class ShoppingListViewModel(
     // Market ürününden yeni öğe ekle
     fun addItemFromMarket(marketItem: MarketItem) {
         viewModelScope.launch {
-            val activeList = _activeShoppingList.value ?: run {
-                val newList = ShoppingList(name = "Yeni Liste")
-                val listId = repository.insertShoppingList(newList).toInt()
-                repository.getShoppingListById(listId)?.also {
-                    _activeShoppingList.value = it
-                } ?: return@launch
-            }
-
-            // Resim URL'sini düzenle
+            // Görsel URL'lerini düzenle
             val imageUrl = when {
                 marketItem.image.startsWith("/") -> "http://10.0.2.2:8000${marketItem.image}"
                 marketItem.image.contains("file=") -> {
@@ -140,29 +132,43 @@ class ShoppingListViewModel(
                 else -> "http://10.0.2.2:8000/image.php?file=${marketItem.image}&size=md"
             }
 
-            // Aynı ürün var mı kontrol et
-            val existingItem = repository.getItemsForList(activeList.id)
-                .first()
-                .find { item -> item.name == marketItem.name }
+            val merchantLogo = when {
+                marketItem.merchant_logo.startsWith("/") -> "http://10.0.2.2:8000${marketItem.merchant_logo}"
+                marketItem.merchant_logo.contains("file=") -> {
+                    val filename = marketItem.merchant_logo.substringAfter("file=").substringBefore("&")
+                    "http://10.0.2.2:8000/image.php?file=${filename}&size=sm"
+                }
+                else -> "http://10.0.2.2:8000/image.php?file=${marketItem.merchant_logo}&size=sm"
+            }
+
+            // Aynı ürünün aynı mağazadan olup olmadığını kontrol et
+            val existingItem = activeListItems.value.find { item ->
+                item.name == marketItem.name && 
+                item.merchantId == marketItem.merchant_id
+            }
 
             if (existingItem != null) {
-                // Varolan ürünün adetini 1 artır, fiyatı güncelle
+                // Aynı mağazadan aynı ürün varsa miktarını ve fiyatını güncelle
                 val updatedItem = existingItem.copy(
-                    quantity = existingItem.quantity + 1, // Sadece 1 adet artır
-                    unitPrice = marketItem.price // Toplam fiyatı birim fiyat olarak kullan
+                    quantity = existingItem.quantity + 1.0, // Her zaman 1 adet artır
+                    price = existingItem.price + marketItem.price
                 )
                 repository.updateItem(updatedItem)
             } else {
-                // Yeni ürün ekle
-                val shoppingListItem = ShoppingListItem(
-                    listId = activeList.id,
+                // Farklı mağazadan veya yeni ürünse yeni satır olarak ekle
+                val newItem = ShoppingListItem(
+                    listId = _activeShoppingList.value?.id ?: 0,
                     name = marketItem.name,
                     quantity = 1.0, // Başlangıç adeti 1
-                    unit = marketItem.unit, // Ürünün kendi birimini kullan (kg, lt vs.)
-                    unitPrice = marketItem.price, // Toplam fiyatı birim fiyat olarak kullan
-                    imageUrl = imageUrl
+                    unit = "adet",
+                    price = marketItem.price,
+                    unitPrice = marketItem.unit_price,
+                    merchantId = marketItem.merchant_id,
+                    merchantLogo = merchantLogo,
+                    imageUrl = imageUrl,
+                    isCompleted = false
                 )
-                repository.insertItem(shoppingListItem)
+                repository.insertItem(newItem)
             }
         }
     }

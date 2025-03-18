@@ -25,6 +25,7 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddCircle
@@ -34,6 +35,7 @@ import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ButtonDefaults
@@ -52,6 +54,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -67,6 +70,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -99,6 +105,10 @@ fun MarketScreen(
     val uiState by viewModel.uiState.collectAsState()
     val searchText by viewModel.newItemText.collectAsState()
     val selectedProduct by viewModel.selectedProduct.collectAsState()
+    val currentSort by viewModel.sortOption.collectAsState()
+
+    // Filtreleme dialog'unu göstermek için state
+    var showSortDialog by remember { mutableStateOf(false) }
 
     // Popup gösterme durumunu takip etmek için state oluşturalım
     var showProductDetails by remember { mutableStateOf(false) }
@@ -106,6 +116,77 @@ fun MarketScreen(
     // Eğer seçilen ürün değiştiyse ve null değilse, popup'ı göster
     if (selectedProduct != null && !showProductDetails) {
         showProductDetails = true
+    }
+
+    // Sıralama dialog'u
+    if (showSortDialog) {
+        AlertDialog(
+            onDismissRequest = { showSortDialog = false },
+            title = {
+                Text(
+                    text = "Sıralama",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterChip(
+                        selected = currentSort == "price-asc",
+                        onClick = {
+                            viewModel.updateSortOption("price-asc")
+                            showSortDialog = false
+                        },
+                        label = { Text("En Düşük Fiyat") },
+                        leadingIcon = if (currentSort == "price-asc") {
+                            {
+                                Icon(
+                                    Icons.Default.KeyboardArrowDown,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        } else null
+                    )
+
+                    FilterChip(
+                        selected = currentSort == "specUnit-asc",
+                        onClick = {
+                            viewModel.updateSortOption("specUnit-asc")
+                            showSortDialog = false
+                        },
+                        label = { Text("En Düşük Birim Fiyat") },
+                        leadingIcon = if (currentSort == "specUnit-asc") {
+                            {
+                                Icon(
+                                    Icons.Default.KeyboardArrowDown,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        } else null
+                    )
+
+                    if (currentSort != null) {
+                        FilterChip(
+                            selected = false,
+                            onClick = {
+                                viewModel.updateSortOption(null)
+                                showSortDialog = false
+                            },
+                            label = { Text("Sıralamayı Kaldır") }
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showSortDialog = false }) {
+                    Text("Kapat")
+                }
+            }
+        )
     }
 
     // Popup dialog'u gösteriyoruz
@@ -177,6 +258,11 @@ fun MarketScreen(
                             },
                             shape = RoundedCornerShape(8.dp),
                             singleLine = true,
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Text,
+                                imeAction = ImeAction.Search,
+                                capitalization = KeyboardCapitalization.None
+                            ),
                             colors = TextFieldDefaults.colors(
                                 focusedIndicatorColor = MaterialTheme.colorScheme.primary,
                                 unfocusedIndicatorColor = Color.LightGray,
@@ -186,18 +272,26 @@ fun MarketScreen(
                         )
 
                         IconButton(
-                            onClick = { /* Handle filter */ },
+                            onClick = { showSortDialog = true },
                             modifier = Modifier
                                 .background(
-                                    color = MaterialTheme.colorScheme.primaryContainer,
+                                    color = if (currentSort != null) {
+                                        MaterialTheme.colorScheme.primary
+                                    } else {
+                                        MaterialTheme.colorScheme.primaryContainer
+                                    },
                                     shape = RoundedCornerShape(8.dp)
                                 )
                                 .padding(4.dp)
                         ) {
                             Icon(
                                 Icons.Default.List,
-                                contentDescription = "Filter",
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer
+                                contentDescription = "Sırala",
+                                tint = if (currentSort != null) {
+                                    Color.White
+                                } else {
+                                    MaterialTheme.colorScheme.onPrimaryContainer
+                                }
                             )
                         }
                     }
@@ -484,6 +578,10 @@ fun ProductDetailDialog(
     // API'den gelen detayları al
     val productDetails by viewModel.productDetails.collectAsState()
     val isLoadingDetails by viewModel.isLoadingProductDetails.collectAsState()
+    val selectedProduct by viewModel.selectedProduct.collectAsState()
+
+    // Seçilen satıcıyı takip etmek için state ekleyelim
+    var selectedOffer by remember { mutableStateOf<Offer?>(null) }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -803,7 +901,16 @@ fun ProductDetailDialog(
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
                                 productDetails?.product?.offers?.forEach { offer ->
-                                    OfferCard(offer = offer, onAddToCart = { onAddToCart(product) })
+                                    OfferCard(
+                                        offer = offer,
+                                        onAddToCart = {
+                                            selectedOffer = offer
+                                            viewModel.updateSelectedProductWithOffer(offer)
+                                            onAddToCart(viewModel.selectedProduct.value ?: product)
+                                        },
+                                        viewModel = viewModel,
+                                        isSelected = selectedOffer == offer
+                                    )
                                 }
                             }
                         }
@@ -817,7 +924,10 @@ fun ProductDetailDialog(
                     ElevatedButton(
                         onClick = { 
                             Log.d("MarketScreen", "Detay ekranında SEPETE EKLE butonuna tıklandı: ${product.name}")
-                            onAddToCart(product) 
+                            if (selectedOffer != null) {
+                                viewModel.updateSelectedProductWithOffer(selectedOffer!!)
+                            }
+                            onAddToCart(viewModel.selectedProduct.value ?: product)
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -858,91 +968,72 @@ fun ProductDetailDialog(
 @Composable
 fun OfferCard(
     offer: Offer,
-    onAddToCart: () -> Unit
+    onAddToCart: () -> Unit,
+    viewModel: MarketViewModel,
+    isSelected: Boolean = false,
+    modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFF9F9F9)
+            containerColor = if (isSelected) Color(0xFFE3F2FD) else Color.White
         ),
-        shape = RoundedCornerShape(8.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
+                .clickable { onAddToCart() }
                 .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // Satıcı logosu
-            val logoUrl = if (offer.merchant_logo.startsWith("/")) {
-                "http://10.0.2.2:8000${offer.merchant_logo}"
-            } else {
-                "http://10.0.2.2:8000/${offer.merchant_logo}"
-            }
-            
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Color.White),
-                contentAlignment = Alignment.Center
+            // Mağaza logosu ve adı
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                // Mağaza logosu
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
-                        .data(logoUrl)
+                        .data(
+                            if (offer.merchant_logo.startsWith("/")) {
+                                "http://10.0.2.2:8000${offer.merchant_logo}"
+                            } else {
+                                "http://10.0.2.2:8000/image.php?file=${offer.merchant_logo}&size=sm"
+                            }
+                        )
                         .crossfade(true)
                         .build(),
                     contentDescription = offer.merchant_name,
                     modifier = Modifier
-                        .size(40.dp),
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(4.dp)),
                     contentScale = ContentScale.Fit
                 )
-            }
-            
-            // Satıcı bilgileri
-            Column(modifier = Modifier.weight(1f)) {
+                
+                // Mağaza adı
                 Text(
                     text = offer.merchant_name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                
-                Text(
-                    text = "Birim Fiyat: ${offer.unit_price} ₺",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.Gray
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium
                 )
             }
             
             // Fiyat ve sepete ekle butonu
-            Column(horizontalAlignment = Alignment.End) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Fiyat
                 Text(
-                    text = "${offer.price} ₺",
+                    text = "₺${String.format("%.2f", offer.price)}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = PrimaryColor
                 )
-                
-                ElevatedButton(
-                    onClick = { onAddToCart() },
-                    colors = ButtonDefaults.elevatedButtonColors(
-                        containerColor = PrimaryColor,
-                        contentColor = Color.White
-                    ),
-                    shape = RoundedCornerShape(6.dp),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                        horizontal = 12.dp,
-                        vertical = 6.dp
-                    ),
-                    modifier = Modifier.padding(top = 4.dp)
-                ) {
-                    Text(
-                        text = "Sepete Ekle",
-                        style = MaterialTheme.typography.bodySmall,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
             }
         }
     }

@@ -24,8 +24,11 @@ data class ShoppingListItem(
     val name: String,
     val quantity: Double,
     val unit: String,
-    val unitPrice: Double,
+    val price: Double = 0.0,
+    val unitPrice: Double = 0.0,
+    val merchantId: String = "",
+    val merchantLogo: String = "",
+    val imageUrl: String = "",
     val isCompleted: Boolean = false,
-    val date: Long = System.currentTimeMillis(),
-    val imageUrl: String? = null
+    val date: Long = System.currentTimeMillis()
 ) 

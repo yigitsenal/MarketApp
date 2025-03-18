@@ -16,7 +16,7 @@ import com.yigitsenal.marketapp.data.model.ShoppingListItem
         ShoppingList::class,
         ShoppingListItem::class
     ],
-    version = 7,
+    version = 9,
     exportSchema = false
 )
 abstract class MarketDatabase : RoomDatabase() {
@@ -35,7 +35,16 @@ abstract class MarketDatabase : RoomDatabase() {
                     MarketDatabase::class.java,
                     "market_database"
                 )
-                .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6, MIGRATION_6_7)
+                .addMigrations(
+                    MIGRATION_1_2,
+                    MIGRATION_2_3,
+                    MIGRATION_3_4,
+                    MIGRATION_4_5,
+                    MIGRATION_5_6,
+                    MIGRATION_6_7,
+                    MIGRATION_7_8,
+                    MIGRATION_8_9
+                )
                 .fallbackToDestructiveMigration()
                 .build()
                 INSTANCE = instance
@@ -43,31 +52,31 @@ abstract class MarketDatabase : RoomDatabase() {
             }
         }
         
-        private val MIGRATION_2_3 = object : Migration(2, 3) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                // Drop existing table if exists
-                database.execSQL("DROP TABLE IF EXISTS market_items")
-                
-                // Create new table with all required columns
-                database.execSQL("""
-                    CREATE TABLE market_items (
-                        id TEXT PRIMARY KEY NOT NULL,
-                        name TEXT NOT NULL DEFAULT '',
-                        description TEXT NOT NULL DEFAULT '',
-                        price REAL NOT NULL DEFAULT 0.0,
-                        originalPrice REAL,
-                        unit TEXT NOT NULL DEFAULT '',
-                        quantity INTEGER NOT NULL DEFAULT 1,
-                        imagePath TEXT NOT NULL DEFAULT '',
-                        productPath TEXT NOT NULL DEFAULT '',
-                        isOnSale INTEGER NOT NULL DEFAULT 0,
-                        isPriceByWeight INTEGER NOT NULL DEFAULT 0
-                    )
-                """)
-            }
+        private val MIGRATION_1_2 = object : Migration(1, 2) {
+                    override fun migrate(database: SupportSQLiteDatabase) {
+                        // Drop existing table if exists
+                        database.execSQL("DROP TABLE IF EXISTS market_items")
+                        
+                        // Create new table with all required columns
+                        database.execSQL("""
+                            CREATE TABLE market_items (
+                                id TEXT PRIMARY KEY NOT NULL,
+                                name TEXT NOT NULL DEFAULT '',
+                                description TEXT NOT NULL DEFAULT '',
+                                price REAL NOT NULL DEFAULT 0.0,
+                                originalPrice REAL,
+                                unit TEXT NOT NULL DEFAULT '',
+                                quantity INTEGER NOT NULL DEFAULT 1,
+                                imagePath TEXT NOT NULL DEFAULT '',
+                                productPath TEXT NOT NULL DEFAULT '',
+                                isOnSale INTEGER NOT NULL DEFAULT 0,
+                                isPriceByWeight INTEGER NOT NULL DEFAULT 0
+                            )
+                        """)
+                    }
         }
         
-        private val MIGRATION_3_4 = object : Migration(3, 4) {
+        private val MIGRATION_2_3 = object : Migration(2, 3) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 // Create shopping lists table
                 database.execSQL("""
@@ -94,7 +103,7 @@ abstract class MarketDatabase : RoomDatabase() {
             }
         }
         
-        private val MIGRATION_4_5 = object : Migration(4, 5) {
+        private val MIGRATION_3_4 = object : Migration(3, 4) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 // Drop existing market_items table
                 database.execSQL("DROP TABLE IF EXISTS market_items")
@@ -118,6 +127,56 @@ abstract class MarketDatabase : RoomDatabase() {
             }
         }
         
+        private val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Yedek tablo oluştur
+                database.execSQL("""
+                    CREATE TABLE shopping_list_items_backup (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        listId INTEGER NOT NULL,
+                        name TEXT NOT NULL,
+                        quantity REAL NOT NULL,
+                        unit TEXT NOT NULL,
+                        price REAL NOT NULL DEFAULT 0.0,
+                        unitPrice REAL NOT NULL DEFAULT 0.0,
+                        merchantId TEXT NOT NULL DEFAULT '',
+                        merchantLogo TEXT NOT NULL DEFAULT '',
+                        imageUrl TEXT NOT NULL DEFAULT '',
+                        isCompleted INTEGER NOT NULL DEFAULT 0,
+                        date INTEGER NOT NULL DEFAULT 0,
+                        FOREIGN KEY (listId) REFERENCES shopping_lists(id) ON DELETE CASCADE
+                    )
+                """)
+                
+                // Mevcut verileri yedek tabloya kopyala
+                database.execSQL("""
+                    INSERT INTO shopping_list_items_backup (
+                        id, listId, name, quantity, unit, price, unitPrice, 
+                        merchantId, merchantLogo, imageUrl, isCompleted, date
+                    )
+                    SELECT 
+                        id, listId, name, quantity, unit, 
+                        COALESCE(unitPrice * quantity, 0.0) as price,
+                        COALESCE(unitPrice, 0.0) as unitPrice,
+                        '' as merchantId,
+                        COALESCE(merchant_logo, '') as merchantLogo,
+                        COALESCE(imageUrl, '') as imageUrl,
+                        isCompleted,
+                        date
+                    FROM shopping_list_items
+                """)
+                
+                // Eski tabloyu sil
+                database.execSQL("DROP TABLE shopping_list_items")
+                
+                // Yedek tabloyu yeniden adlandır
+                database.execSQL("ALTER TABLE shopping_list_items_backup RENAME TO shopping_list_items")
+                
+                // İndeksi yeniden oluştur
+                database.execSQL("CREATE INDEX index_shopping_list_items_listId ON shopping_list_items(listId)")
+            }
+        }
+        
         private val MIGRATION_5_6 = object : Migration(5, 6) {
             override fun migrate(database: SupportSQLiteDatabase) {
                 // Yedek tablo oluştur
@@ -131,14 +190,18 @@ abstract class MarketDatabase : RoomDatabase() {
                         unitPrice REAL NOT NULL,
                         isCompleted INTEGER NOT NULL DEFAULT 0,
                         date INTEGER NOT NULL,
+                        imageUrl TEXT,
                         FOREIGN KEY (listId) REFERENCES shopping_lists(id) ON DELETE CASCADE
                     )
                 """)
                 
-                // Mevcut verileri yedek tabloya kopyala (listId alanı için varsayılan değer 1 kullan)
+                // Mevcut verileri yedek tabloya kopyala
                 database.execSQL("""
-                    INSERT OR IGNORE INTO shopping_list_items_backup (id, listId, name, quantity, unit, unitPrice, isCompleted, date)
-                    SELECT id, 1, name, quantity, unit, unitPrice, isCompleted, date FROM shopping_list_items
+                    INSERT INTO shopping_list_items_backup (
+                        id, listId, name, quantity, unit, unitPrice, isCompleted, date
+                    )
+                    SELECT id, listId, name, quantity, unit, unitPrice, isCompleted, date 
+                    FROM shopping_list_items
                 """)
                 
                 // Eski tabloyu sil
@@ -186,6 +249,106 @@ abstract class MarketDatabase : RoomDatabase() {
                 database.execSQL("ALTER TABLE shopping_list_items_backup RENAME TO shopping_list_items")
                 
                 // listId için indeks oluştur
+                database.execSQL("CREATE INDEX index_shopping_list_items_listId ON shopping_list_items(listId)")
+            }
+        }
+        
+        private val MIGRATION_7_8 = object : Migration(7, 8) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Yedek tablo oluştur
+                database.execSQL("""
+                    CREATE TABLE shopping_list_items_backup (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        listId INTEGER NOT NULL,
+                        name TEXT NOT NULL,
+                        quantity REAL NOT NULL,
+                        unit TEXT NOT NULL,
+                        price REAL NOT NULL DEFAULT 0.0,
+                        unitPrice REAL NOT NULL DEFAULT 0.0,
+                        merchantId TEXT NOT NULL DEFAULT '',
+                        merchantLogo TEXT NOT NULL DEFAULT '',
+                        imageUrl TEXT NOT NULL DEFAULT '',
+                        isCompleted INTEGER NOT NULL DEFAULT 0,
+                        date INTEGER NOT NULL DEFAULT 0,
+                        FOREIGN KEY (listId) REFERENCES shopping_lists(id) ON DELETE CASCADE
+                    )
+                """)
+
+                // Mevcut verileri yedek tabloya kopyala
+                database.execSQL("""
+                    INSERT INTO shopping_list_items_backup (
+                        id, listId, name, quantity, unit, price, unitPrice, 
+                        merchantId, merchantLogo, imageUrl, isCompleted, date
+                    )
+                    SELECT 
+                        id, listId, name, quantity, unit, 
+                        COALESCE(unitPrice * quantity, 0.0) as price,
+                        COALESCE(unitPrice, 0.0) as unitPrice,
+                        '' as merchantId,
+                        COALESCE(merchant_logo, '') as merchantLogo,
+                        COALESCE(imageUrl, '') as imageUrl,
+                        isCompleted,
+                        date
+                    FROM shopping_list_items
+                """)
+
+                // Eski tabloyu sil
+                database.execSQL("DROP TABLE shopping_list_items")
+
+                // Yedek tabloyu yeniden adlandır
+                database.execSQL("ALTER TABLE shopping_list_items_backup RENAME TO shopping_list_items")
+
+                // İndeksi yeniden oluştur
+                database.execSQL("CREATE INDEX index_shopping_list_items_listId ON shopping_list_items(listId)")
+            }
+        }
+        
+        private val MIGRATION_8_9 = object : Migration(8, 9) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Yedek tablo oluştur
+                database.execSQL("""
+                    CREATE TABLE shopping_list_items_backup (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                        listId INTEGER NOT NULL,
+                        name TEXT NOT NULL,
+                        quantity REAL NOT NULL,
+                        unit TEXT NOT NULL,
+                        price REAL NOT NULL DEFAULT 0.0,
+                        unitPrice REAL NOT NULL DEFAULT 0.0,
+                        merchantId TEXT NOT NULL DEFAULT '',
+                        merchantLogo TEXT NOT NULL DEFAULT '',
+                        imageUrl TEXT NOT NULL DEFAULT '',
+                        isCompleted INTEGER NOT NULL DEFAULT 0,
+                        date INTEGER NOT NULL DEFAULT 0,
+                        FOREIGN KEY (listId) REFERENCES shopping_lists(id) ON DELETE CASCADE
+                    )
+                """)
+
+                // Mevcut verileri yedek tabloya kopyala
+                database.execSQL("""
+                    INSERT INTO shopping_list_items_backup (
+                        id, listId, name, quantity, unit, price, unitPrice, 
+                        merchantId, merchantLogo, imageUrl, isCompleted, date
+                    )
+                    SELECT 
+                        id, listId, name, quantity, unit, 
+                        COALESCE(unitPrice * quantity, 0.0) as price,
+                        COALESCE(unitPrice, 0.0) as unitPrice,
+                        '' as merchantId,
+                        '' as merchantLogo,
+                        COALESCE(imageUrl, '') as imageUrl,
+                        isCompleted,
+                        COALESCE(date, strftime('%s', 'now') * 1000)
+                    FROM shopping_list_items
+                """)
+
+                // Eski tabloyu sil
+                database.execSQL("DROP TABLE shopping_list_items")
+
+                // Yedek tabloyu yeniden adlandır
+                database.execSQL("ALTER TABLE shopping_list_items_backup RENAME TO shopping_list_items")
+
+                // İndeksi yeniden oluştur
                 database.execSQL("CREATE INDEX index_shopping_list_items_listId ON shopping_list_items(listId)")
             }
         }
