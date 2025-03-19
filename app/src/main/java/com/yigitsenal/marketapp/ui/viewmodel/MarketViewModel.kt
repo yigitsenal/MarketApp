@@ -7,6 +7,9 @@ import androidx.lifecycle.viewModelScope
 import com.yigitsenal.marketapp.data.model.MarketItem
 import com.yigitsenal.marketapp.data.model.Offer
 import com.yigitsenal.marketapp.data.model.ProductDetailResponse
+import com.yigitsenal.marketapp.data.network.PriceHistoryEntry
+import com.yigitsenal.marketapp.data.network.PricePredictionApiService
+import com.yigitsenal.marketapp.data.network.PricePredictionResult
 import com.yigitsenal.marketapp.data.repository.MarketRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,6 +19,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.update
+import java.util.regex.Pattern
 
 class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
 
@@ -40,9 +44,20 @@ class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
     // Sıralama seçeneği için state
     private val _sortOption = MutableStateFlow<String?>(null)
     val sortOption: StateFlow<String?> = _sortOption
+    
+    // Fiyat tahmini için state
+    private val _pricePrediction = MutableStateFlow<PricePredictionResult?>(null)
+    val pricePrediction: StateFlow<PricePredictionResult?> = _pricePrediction
+    
+    // Fiyat tahmini yükleniyor mu durumunu tutacak state
+    private val _isLoadingPricePrediction = MutableStateFlow(false)
+    val isLoadingPricePrediction: StateFlow<Boolean> = _isLoadingPricePrediction
 
     private var searchJob: Job? = null
     private var productDetailJob: Job? = null
+    private var pricePredictionJob: Job? = null
+    
+    private val pricePredictionService = PricePredictionApiService.create()
 
     init {
         loadItems()
@@ -113,6 +128,9 @@ class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
     fun setSelectedProduct(product: MarketItem?) {
         _selectedProduct.value = product
         
+        // Fiyat tahminini sıfırla
+        _pricePrediction.value = null
+        
         // Eğer ürün seçildiyse ve URL değeri varsa, detayları yüklemeyi deneyebiliriz
         if (product != null && product.url.isNotEmpty()) {
             loadProductDetails(product.url)
@@ -172,6 +190,123 @@ class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
             } finally {
                 _isLoadingProductDetails.value = false
             }
+        }
+    }
+    
+    fun predictFuturePrice() {
+        val product = _selectedProduct.value ?: return
+        val details = _productDetails.value ?: return
+        val priceHistory = details.product.price_history
+        
+        if (priceHistory.isEmpty()) {
+            _pricePrediction.value = PricePredictionResult(
+                prediction30Days = null,
+                prediction60Days = null,
+                prediction90Days = null,
+                analysis = null,
+                errorMessage = "Fiyat tahmini yapılamıyor: Geçmiş fiyat bilgisi bulunamadı."
+            )
+            return
+        }
+        
+        pricePredictionJob?.cancel()
+        pricePredictionJob = viewModelScope.launch {
+            try {
+                _isLoadingPricePrediction.value = true
+                
+                // Model için uygun formatta veri oluştur
+                val historyEntries = priceHistory.map { 
+                    PriceHistoryEntry(it.date, it.price)
+                }
+                
+                // API isteği oluştur
+                val request = PricePredictionApiService.buildRequestForPricePrediction(
+                    productName = product.name,
+                    priceHistory = historyEntries
+                )
+                
+                // API'yi çağır
+                val response = pricePredictionService.predictPrice(
+                    request = request,
+                    apiKey = PricePredictionApiService.API_KEY // API anahtarını query parametresi olarak gönder
+                )
+                
+                // Yanıtı işle
+                val responseText = response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
+                
+                if (responseText != null) {
+                    // Yanıttan tahmin değerlerini çıkar
+                    val result = parseAIResponse(responseText)
+                    _pricePrediction.value = result
+                } else {
+                    _pricePrediction.value = PricePredictionResult(
+                        prediction30Days = null,
+                        prediction60Days = null,
+                        prediction90Days = null,
+                        analysis = null,
+                        errorMessage = "Fiyat tahmini alınamadı: AI yanıtı boş."
+                    )
+                }
+                
+            } catch (e: Exception) {
+                Log.e("MarketViewModel", "Error predicting price", e)
+                val errorMessage = when {
+                    e.message?.contains("403") == true -> "Gemini API erişim hatası: API anahtarı geçersiz veya sınırlamalar aşıldı."
+                    e.message?.contains("404") == true -> "Gemini API erişim hatası: İstek yapılan endpoit bulunamadı."
+                    e.message?.contains("429") == true -> "Gemini API erişim hatası: Çok fazla istek gönderildi, lütfen daha sonra tekrar deneyin."
+                    e.message?.contains("timeout") == true || e.message?.contains("timed out") == true -> "Gemini API zaman aşımına uğradı, lütfen daha sonra tekrar deneyin."
+                    e.message?.contains("network") == true || e.message?.contains("connection") == true -> "Ağ bağlantısı hatası, internet bağlantınızı kontrol edin."
+                    else -> "Fiyat tahmini yapılırken hata oluştu: ${e.message}"
+                }
+                
+                _pricePrediction.value = PricePredictionResult(
+                    prediction30Days = null,
+                    prediction60Days = null,
+                    prediction90Days = null,
+                    analysis = null,
+                    errorMessage = errorMessage
+                )
+            } finally {
+                _isLoadingPricePrediction.value = false
+            }
+        }
+    }
+    
+    private fun parseAIResponse(responseText: String): PricePredictionResult {
+        try {
+            // Regex ile tahmin değerlerini al
+            val pattern30 = Pattern.compile("30 Gün: ([0-9.]+) TL")
+            val pattern60 = Pattern.compile("60 Gün: ([0-9.]+) TL")
+            val pattern90 = Pattern.compile("90 Gün: ([0-9.]+) TL")
+            
+            val matcher30 = pattern30.matcher(responseText)
+            val matcher60 = pattern60.matcher(responseText)
+            val matcher90 = pattern90.matcher(responseText)
+            
+            val prediction30 = if (matcher30.find()) matcher30.group(1)?.toDoubleOrNull() else null
+            val prediction60 = if (matcher60.find()) matcher60.group(1)?.toDoubleOrNull() else null
+            val prediction90 = if (matcher90.find()) matcher90.group(1)?.toDoubleOrNull() else null
+            
+            // Tahmin nedenleri bölümünü al
+            val analysisPattern = Pattern.compile("Tahminin nedenleri:(.+)", Pattern.DOTALL)
+            val analysisMatcher = analysisPattern.matcher(responseText)
+            val analysis = if (analysisMatcher.find()) analysisMatcher.group(1)?.trim() else null
+            
+            return PricePredictionResult(
+                prediction30Days = prediction30,
+                prediction60Days = prediction60,
+                prediction90Days = prediction90,
+                analysis = analysis
+            )
+        } catch (e: Exception) {
+            Log.e("MarketViewModel", "Error parsing AI response", e)
+            return PricePredictionResult(
+                prediction30Days = null,
+                prediction60Days = null,
+                prediction90Days = null,
+                analysis = null,
+                errorMessage = "AI yanıtı işlenirken hata oluştu: ${e.message}"
+            )
         }
     }
 

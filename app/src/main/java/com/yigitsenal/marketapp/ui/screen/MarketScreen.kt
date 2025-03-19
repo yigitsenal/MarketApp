@@ -473,8 +473,10 @@ fun ProductCard(
                                         .build(),
                                     contentDescription = "Store logo",
                                     modifier = Modifier
-                                        .size(36.dp)
-                                        .clip(RoundedCornerShape(6.dp)),
+                                        .width(70.dp)
+                                        .height(45.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(8.dp)),
                                     contentScale = ContentScale.Fit
                                 )
                             }
@@ -921,6 +923,172 @@ fun ProductDetailDialog(
                 item {
                     Spacer(modifier = Modifier.height(16.dp))
                     
+                    // Fiyat tahmini butonu ekliyoruz
+                    ElevatedButton(
+                        onClick = { 
+                            viewModel.predictFuturePrice() 
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        colors = ButtonDefaults.elevatedButtonColors(
+                            containerColor = SecondaryColor,
+                            contentColor = Color.White
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            text = "Gelecek Fiyat Tahmini Yap",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                    
+                    // Fiyat tahmini sonuçları
+                    val pricePrediction by viewModel.pricePrediction.collectAsState()
+                    val isLoadingPrediction by viewModel.isLoadingPricePrediction.collectAsState()
+                    
+                    if (isLoadingPrediction) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            CircularProgressIndicator(color = SecondaryColor)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Fiyat tahminleri hesaplanıyor...",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.Gray
+                            )
+                        }
+                    }
+                    
+                    pricePrediction?.let { prediction ->
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp)),
+                            colors = CardDefaults.cardColors(
+                                containerColor = Color(0xFFF5F5F5)
+                            ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                        ) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                            ) {
+                                Text(
+                                    text = "Fiyat Tahminleri",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                
+                                Spacer(modifier = Modifier.height(12.dp))
+                                
+                                if (prediction.errorMessage != null) {
+                                    // Hata mesajı
+                                    Text(
+                                        text = prediction.errorMessage,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = Color.Red
+                                    )
+                                } else {
+                                    // Tahmin sonuçları
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        // 30 gün tahmini
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text(
+                                                text = "30 Gün",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = Color.Gray
+                                            )
+                                            Text(
+                                                text = "${prediction.prediction30Days ?: "--"} ₺",
+                                                style = MaterialTheme.typography.bodyLarge,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (prediction.prediction30Days != null && 
+                                                            productDetails?.product?.offers?.firstOrNull()?.price ?: 0.0 < prediction.prediction30Days) {
+                                                    Color.Red
+                                                } else {
+                                                    Color.Green
+                                                }
+                                            )
+                                        }
+                                        
+                                        // 60 gün tahmini
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text(
+                                                text = "60 Gün",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = Color.Gray
+                                            )
+                                            Text(
+                                                text = "${prediction.prediction60Days ?: "--"} ₺",
+                                                style = MaterialTheme.typography.bodyLarge,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (prediction.prediction60Days != null && 
+                                                            productDetails?.product?.offers?.firstOrNull()?.price ?: 0.0 < prediction.prediction60Days) {
+                                                    Color.Red
+                                                } else {
+                                                    Color.Green
+                                                }
+                                            )
+                                        }
+                                        
+                                        // 90 gün tahmini
+                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                            Text(
+                                                text = "90 Gün",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = Color.Gray
+                                            )
+                                            Text(
+                                                text = "${prediction.prediction90Days ?: "--"} ₺",
+                                                style = MaterialTheme.typography.bodyLarge,
+                                                fontWeight = FontWeight.Bold,
+                                                color = if (prediction.prediction90Days != null && 
+                                                            productDetails?.product?.offers?.firstOrNull()?.price ?: 0.0 < prediction.prediction90Days) {
+                                                    Color.Red
+                                                } else {
+                                                    Color.Green
+                                                }
+                                            )
+                                        }
+                                    }
+                                    
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    
+                                    // Analiz
+                                    if (prediction.analysis != null) {
+                                        Text(
+                                            text = "Analiz",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = prediction.analysis,
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = Color.DarkGray
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
                     // Add to cart button
                     ElevatedButton(
                         onClick = { 
@@ -1010,8 +1178,10 @@ fun OfferCard(
                         .build(),
                     contentDescription = offer.merchant_name,
                     modifier = Modifier
-                        .size(32.dp)
-                        .clip(RoundedCornerShape(4.dp)),
+                        .width(60.dp)
+                        .height(40.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(6.dp)),
                     contentScale = ContentScale.Fit
                 )
                 
