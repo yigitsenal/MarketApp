@@ -716,6 +716,29 @@ fun ProductDetailDialog(
                                     )
                                 }
 
+                                // Mağaza logosu (marka ve miktar arasında)
+                                if (product.merchant_logo.isNotEmpty()) {
+                                    val logoUrl = if (product.merchant_logo.startsWith("/")) {
+                                        "http://10.0.2.2:8000${product.merchant_logo}"
+                                    } else {
+                                        "http://10.0.2.2:8000/${product.merchant_logo}"
+                                    }
+                                    
+                                    AsyncImage(
+                                        model = ImageRequest.Builder(LocalContext.current)
+                                            .data(logoUrl)
+                                            .crossfade(true)
+                                            .build(),
+                                        contentDescription = "Mağaza logosu",
+                                        modifier = Modifier
+                                            .width(50.dp)
+                                            .height(30.dp)
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(4.dp)),
+                                        contentScale = ContentScale.Fit
+                                    )
+                                }
+
                                 // Miktar
                                 Box(
                                     modifier = Modifier
@@ -753,38 +776,83 @@ fun ProductDetailDialog(
                                 }
                             } else {
                                 // API'den gelen fiyat bilgileri
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.Bottom
-                                ) {
-                                    Column {
-                                        Text(
-                                            text = "Birim Fiyat",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = Color.Gray
-                                        )
+                                Column(modifier = Modifier.fillMaxWidth()) {
+                                    // Fiyat bilgileri
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.Bottom
+                                    ) {
+                                        // Sol taraf: Birim fiyat
+                                        Column {
+                                            Text(
+                                                text = "Birim Fiyat",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = Color.Gray
+                                            )
 
-                                        Text(
-                                            text = "${productDetails?.product?.offers?.firstOrNull()?.unit_price ?: product.unit_price} ₺",
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            fontWeight = FontWeight.Medium
-                                        )
+                                            Text(
+                                                text = "${product.unit_price} ₺",
+                                                style = MaterialTheme.typography.bodyLarge,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        }
+
+                                        // Sağ taraf: Toplam fiyat
+                                        Column(horizontalAlignment = Alignment.End) {
+                                            Text(
+                                                text = "Toplam",
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                color = Color.Gray
+                                            )
+
+                                            Text(
+                                                text = "${product.price} ₺",
+                                                style = MaterialTheme.typography.headlineMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = PrimaryColor
+                                            )
+                                        }
                                     }
-
-                                    Column(horizontalAlignment = Alignment.End) {
-                                        Text(
-                                            text = "Toplam",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = Color.Gray
+                                    
+                                    Spacer(modifier = Modifier.height(16.dp))
+                                    
+                                    // Sepete ekle butonu (fiyatların altında, genişletilmiş)
+                                    ElevatedButton(
+                                        onClick = { 
+                                            Log.d("MarketScreen", "Detay ekranında SEPETE EKLE butonuna tıklandı: ${product.name}")
+                                            if (selectedOffer != null) {
+                                                viewModel.updateSelectedProductWithOffer(selectedOffer!!)
+                                            }
+                                            onAddToCart(viewModel.selectedProduct.value ?: product)
+                                        },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(48.dp),
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = ButtonDefaults.elevatedButtonColors(
+                                            containerColor = PrimaryColor,
+                                            contentColor = Color.White
                                         )
-
-                                        Text(
-                                            text = "${productDetails?.product?.offers?.firstOrNull()?.price ?: product.price} ₺",
-                                            style = MaterialTheme.typography.headlineMedium,
-                                            fontWeight = FontWeight.Bold,
-                                            color = PrimaryColor
-                                        )
+                                    ) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.Center
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.ShoppingCart,
+                                                contentDescription = "Sepete Ekle",
+                                                modifier = Modifier.size(20.dp)
+                                            )
+                                            
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            
+                                            Text(
+                                                text = "SEPETE EKLE",
+                                                style = MaterialTheme.typography.bodyLarge,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -1082,50 +1150,6 @@ fun ProductDetailDialog(
                                     }
                                 }
                             }
-                        }
-                    }
-                }
-                
-                item {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    // Add to cart button
-                    ElevatedButton(
-                        onClick = { 
-                            Log.d("MarketScreen", "Detay ekranında SEPETE EKLE butonuna tıklandı: ${product.name}")
-                            if (selectedOffer != null) {
-                                viewModel.updateSelectedProductWithOffer(selectedOffer!!)
-                            }
-                            onAddToCart(viewModel.selectedProduct.value ?: product)
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = ButtonDefaults.elevatedButtonColors(
-                            containerColor = PrimaryColor,
-                            contentColor = Color.White
-                        ),
-                        elevation = ButtonDefaults.elevatedButtonElevation(
-                            defaultElevation = 6.dp
-                        )
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.Center
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.ShoppingCart,
-                                contentDescription = "Sepete Ekle"
-                            )
-                            
-                            Spacer(modifier = Modifier.width(8.dp))
-                            
-                            Text(
-                                text = "SEPETE EKLE",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
-                            )
                         }
                     }
                 }

@@ -510,7 +510,7 @@ fun ShoppingListItemRow(
                             colors = CardDefaults.cardColors(containerColor = Color.White),
                             modifier = Modifier
                                 .width(74.dp)
-                                .height(49.dp)
+                                .height(45.dp)
                         ) {
                             AsyncImage(
                                 model = ImageRequest.Builder(LocalContext.current)

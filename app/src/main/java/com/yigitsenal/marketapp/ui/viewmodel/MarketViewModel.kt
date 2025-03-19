@@ -169,16 +169,8 @@ class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
                 // Sıralanmış ürün detaylarını state'e kaydet
                 _productDetails.value = sortedResponse
                 
-                // Seçili ürünü en ucuz fiyatlı satıcının bilgileriyle güncelle
-                val cheapestOffer = sortedResponse.product.offers.firstOrNull()
-                if (cheapestOffer != null) {
-                    _selectedProduct.value = _selectedProduct.value?.copy(
-                        price = cheapestOffer.price,
-                        unit_price = cheapestOffer.unit_price,
-                        merchant_id = cheapestOffer.merchant_id.toString(),
-                        merchant_logo = cheapestOffer.merchant_logo
-                    )
-                }
+                // NOT: Artık burada seçili ürünü güncelleme işlemi yapılmıyor
+                // Böylece ürünün arama sayfasında görüntülenen en ucuz mağaza ve fiyat bilgisi korunuyor
                 
             } catch (e: Exception) {
                 Log.e("MarketViewModel", "Error loading product details", e)
