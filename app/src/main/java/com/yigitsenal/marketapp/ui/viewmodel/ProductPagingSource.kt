@@ -17,7 +17,7 @@ class ProductPagingSource(
             val response = repository.searchProducts(query, sort, page)
 
             LoadResult.Page(
-                data = response.products,
+                data = response.products ?: emptyList(),
                 prevKey = if (response.pagination.has_previous) page - 1 else null,
                 nextKey = if (response.pagination.has_next) page + 1 else null
             )

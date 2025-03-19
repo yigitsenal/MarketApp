@@ -82,10 +82,15 @@ class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
                     query = _newItemText.value,
                     sort = _sortOption.value
                 )
-                _uiState.value = MarketUiState.Success(response.products)
+                
+                if (response.success && response.products?.isNotEmpty() == true) {
+                    _uiState.value = MarketUiState.Success(response.products)
+                } else {
+                    _uiState.value = MarketUiState.Success(emptyList())
+                }
             } catch (e: Exception) {
                 Log.e("MarketViewModel", "Error searching products", e)
-                _uiState.value = MarketUiState.Error(e.message ?: "Bir hata oluştu")
+                _uiState.value = MarketUiState.Error("Arama sırasında bir hata oluştu: ${e.message}")
             }
         }
     }
@@ -204,7 +209,7 @@ class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
 
 sealed class MarketUiState {
     object Loading : MarketUiState()
-    data class Success(val items: List<MarketItem>) : MarketUiState()
+    data class Success(val items: List<MarketItem> = emptyList()) : MarketUiState()
     data class Error(val message: String) : MarketUiState()
 }
 

@@ -28,7 +28,22 @@ class MarketRepository(
     }
     
     suspend fun searchProducts(query: String, sort: String? = null, page: Int? = null): SearchResponse {
-        return requireNotNull(apiService) { "API service is not initialized" }.searchProducts(query, sort, page)
+        val normalizedQuery = query
+            .replace('ı', 'i')
+            .replace('ğ', 'g')
+            .replace('ü', 'u')
+            .replace('ş', 's')
+            .replace('ö', 'o')
+            .replace('ç', 'c')
+            .replace('İ', 'I')
+            .replace('Ğ', 'G')
+            .replace('Ü', 'U')
+            .replace('Ş', 'S')
+            .replace('Ö', 'O')
+            .replace('Ç', 'C')
+            
+        val encodedQuery = java.net.URLEncoder.encode(normalizedQuery, "UTF-8")
+        return requireNotNull(apiService) { "API service is not initialized" }.searchProducts(encodedQuery, sort, page)
     }
     
     suspend fun getProductDetails(productPath: String): ProductDetailResponse {

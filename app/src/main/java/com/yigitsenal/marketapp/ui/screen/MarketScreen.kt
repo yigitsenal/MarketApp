@@ -261,7 +261,8 @@ fun MarketScreen(
                             keyboardOptions = KeyboardOptions(
                                 keyboardType = KeyboardType.Text,
                                 imeAction = ImeAction.Search,
-                                capitalization = KeyboardCapitalization.None
+                                capitalization = KeyboardCapitalization.None,
+                                autoCorrect = true
                             ),
                             colors = TextFieldDefaults.colors(
                                 focusedIndicatorColor = MaterialTheme.colorScheme.primary,

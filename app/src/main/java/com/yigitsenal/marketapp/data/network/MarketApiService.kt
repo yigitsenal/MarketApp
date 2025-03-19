@@ -20,7 +20,7 @@ data class SearchResponse(
     val timestamp: String,
     val pagination: PaginationInfo,
     val total: Int,
-    val products: List<MarketItem>
+    val products: List<MarketItem>? = emptyList()
 )
 
 interface MarketApiService {
