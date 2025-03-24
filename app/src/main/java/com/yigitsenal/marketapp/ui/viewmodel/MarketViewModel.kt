@@ -168,16 +168,16 @@ class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
                 
                 // Sıralanmış ürün detaylarını state'e kaydet
                 _productDetails.value = sortedResponse
-                
-                // NOT: Artık burada seçili ürünü güncelleme işlemi yapılmıyor
-                // Böylece ürünün arama sayfasında görüntülenen en ucuz mağaza ve fiyat bilgisi korunuyor
+
+                // Seçili ürünü güncelle ve satıcı sayısını ekle
+                _selectedProduct.update { currentProduct ->
+                    currentProduct?.copy(
+                        offer_count = sortedResponse.product.offers.size
+                    )
+                }
                 
             } catch (e: Exception) {
                 Log.e("MarketViewModel", "Error loading product details", e)
-                Log.e("MarketViewModel", "Error message: ${e.message}")
-                Log.e("MarketViewModel", "Error cause: ${e.cause}")
-                Log.e("MarketViewModel", "Error stack trace: ${e.stackTraceToString()}")
-                e.printStackTrace()
                 _productDetails.value = null
             } finally {
                 _isLoadingProductDetails.value = false

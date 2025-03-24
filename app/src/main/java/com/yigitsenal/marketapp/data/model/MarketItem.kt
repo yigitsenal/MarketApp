@@ -15,5 +15,6 @@ data class MarketItem(
     var merchant_id: String = "",
     var merchant_logo: String = "",
     var image: String = "",
-    var url: String = ""
+    var url: String = "",
+    var offer_count: Int = 0
 )

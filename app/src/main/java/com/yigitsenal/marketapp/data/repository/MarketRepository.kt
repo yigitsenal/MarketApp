@@ -43,7 +43,24 @@ class MarketRepository(
             .replace('Ç', 'C')
             
         val encodedQuery = java.net.URLEncoder.encode(normalizedQuery, "UTF-8")
-        return requireNotNull(apiService) { "API service is not initialized" }.searchProducts(encodedQuery, sort, page)
+        val response = requireNotNull(apiService) { "API service is not initialized" }.searchProducts(encodedQuery, sort, page)
+
+        // Her ürün için detayları yükle ve satıcı sayısını güncelle
+        val updatedProducts = response.products?.map { product ->
+            try {
+                if (product.url.isNotEmpty()) {
+                    val details = getProductDetails(product.url)
+                    product.copy(offer_count = details.product.offers.size)
+                } else {
+                    product.copy(offer_count = 0)
+                }
+            } catch (e: Exception) {
+                Log.e("MarketRepository", "Error loading product details for ${product.name}", e)
+                product.copy(offer_count = 0)
+            }
+        } ?: emptyList()
+
+        return response.copy(products = updatedProducts)
     }
     
     suspend fun getProductDetails(productPath: String): ProductDetailResponse {

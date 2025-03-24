@@ -16,7 +16,7 @@ import com.yigitsenal.marketapp.data.model.ShoppingListItem
         ShoppingList::class,
         ShoppingListItem::class
     ],
-    version = 9,
+    version = 10,
     exportSchema = false
 )
 abstract class MarketDatabase : RoomDatabase() {
@@ -43,7 +43,8 @@ abstract class MarketDatabase : RoomDatabase() {
                     MIGRATION_5_6,
                     MIGRATION_6_7,
                     MIGRATION_7_8,
-                    MIGRATION_8_9
+                    MIGRATION_8_9,
+                    MIGRATION_9_10
                 )
                 .fallbackToDestructiveMigration()
                 .build()
@@ -350,6 +351,13 @@ abstract class MarketDatabase : RoomDatabase() {
 
                 // İndeksi yeniden oluştur
                 database.execSQL("CREATE INDEX index_shopping_list_items_listId ON shopping_list_items(listId)")
+            }
+        }
+        
+        private val MIGRATION_9_10 = object : Migration(9, 10) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Add offer_count column to market_items table
+                database.execSQL("ALTER TABLE market_items ADD COLUMN offer_count INTEGER NOT NULL DEFAULT 0")
             }
         }
     }

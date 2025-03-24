@@ -12,6 +12,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,6 +23,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -213,87 +216,96 @@ fun MarketScreen(
                 color = MaterialTheme.colorScheme.surface,
                 shadowElevation = 4.dp
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+                    // Arama alanı
+                    OutlinedTextField(
+                        value = searchText,
+                        onValueChange = { viewModel.updateNewItemText(it) },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("şeker") },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.Search,
+                                contentDescription = "Ara",
+                                tint = Color.Gray
+                            )
+                        },
+                        trailingIcon = {
+                            IconButton(onClick = { }) {
+                                Icon(
+                                    imageVector = Icons.Default.List,
+                                    contentDescription = "Konum",
+                                    tint = Color.Gray
+                                )
+                            }
+                        },
+                        shape = RoundedCornerShape(30.dp),
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Text,
+                            imeAction = ImeAction.Search,
+                            capitalization = KeyboardCapitalization.None,
+                            autoCorrect = true
+                        ),
+                        colors = TextFieldDefaults.colors(
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                            focusedContainerColor = Color(0xFFF0F0F0),
+                            unfocusedContainerColor = Color(0xFFF0F0F0)
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Arama sonuçları başlığı ve filtrele butonu
                     Row(
                         modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        IconButton(
-                            onClick = { onBackPressed() },
-                            modifier = Modifier.padding(end = 8.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Close,
-                                contentDescription = "Geri",
-                                tint = MaterialTheme.colorScheme.onSurface
+                        Column {
+                            Text(
+                                text = "\"${searchText}\" arama sonuçları",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            
+                            // Başlık altında ürün sayısı
+                            Text(
+                                text = when (val currentState = uiState) {
+                                    is MarketUiState.Success -> "${currentState.items.size} Ürün Listeleniyor"
+                                    else -> "Ürünler Yükleniyor"
+                                },
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = Color.Gray
                             )
                         }
                         
-                        Text(
-                            text = "Ürün Ara",
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-                    }
-                    
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        OutlinedTextField(
-                            value = searchText,
-                            onValueChange = { viewModel.updateNewItemText(it) },
-                            modifier = Modifier.weight(1f),
-                            placeholder = { Text("tuvalet kağıdı") },
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Default.Search,
-                                    contentDescription = "Search",
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                            },
-                            shape = RoundedCornerShape(8.dp),
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Text,
-                                imeAction = ImeAction.Search,
-                                capitalization = KeyboardCapitalization.None,
-                                autoCorrect = true
-                            ),
-                            colors = TextFieldDefaults.colors(
-                                focusedIndicatorColor = MaterialTheme.colorScheme.primary,
-                                unfocusedIndicatorColor = Color.LightGray,
-                                focusedContainerColor = Color.White,
-                                unfocusedContainerColor = Color.White
-                            )
-                        )
-
-                        IconButton(
-                            onClick = { showSortDialog = true },
+                        // Filtrele butonu
+                        Box(
                             modifier = Modifier
-                                .background(
-                                    color = if (currentSort != null) {
-                                        MaterialTheme.colorScheme.primary
-                                    } else {
-                                        MaterialTheme.colorScheme.primaryContainer
-                                    },
-                                    shape = RoundedCornerShape(8.dp)
-                                )
-                                .padding(4.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(Color.White)
+                                .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(8.dp))
+                                .clickable { showSortDialog = true }
+                                .padding(horizontal = 12.dp, vertical = 8.dp)
                         ) {
-                            Icon(
-                                Icons.Default.List,
-                                contentDescription = "Sırala",
-                                tint = if (currentSort != null) {
-                                    Color.White
-                                } else {
-                                    MaterialTheme.colorScheme.onPrimaryContainer
-                                }
-                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text(
+                                    text = "Filtrele",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Icon(
+                                    Icons.Default.KeyboardArrowDown,
+                                    contentDescription = "Filtrele",
+                                    modifier = Modifier.size(18.dp),
+                                    tint = Color.Black
+                                )
+                            }
                         }
                     }
                 }
@@ -315,40 +327,25 @@ fun MarketScreen(
                     }
                 }
                 is MarketUiState.Success -> {
-                    AnimatedVisibility(
-                        visible = true,
-                        enter = fadeIn() + slideInVertically(),
-                        exit = fadeOut()
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(2),
+                        contentPadding = PaddingValues(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.fillMaxSize()
                     ) {
-                        LazyColumn(
-                            modifier = Modifier.fillMaxWidth(),
-                            contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                                top = 8.dp,
-                                bottom = 8.dp,
-                                start = 16.dp,
-                                end = 16.dp
-                            ),
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            items(
-                                items = currentState.items,
-                                key = { it.id }
-                            ) { item ->
-                                ProductCard(
-                                    item = item,
-                                    onClick = {
-                                        // Ürün kart'ına tıklandığında
-                                        Log.d("MarketScreen", "Product clicked: ${item.id}")
-                                        Log.d("MarketScreen", "Product URL: ${item.url}")
-                                        Log.d("MarketScreen", "Product name: ${item.name}")
-                                        viewModel.setSelectedProduct(item)
-                                    },
-                                    onAddToCart = { product ->
-                                        shoppingListViewModel.addItemFromMarket(product)
-                                        onBackPressed()
-                                    }
-                                )
-                            }
+                        items(currentState.items.size) { index ->
+                            val item = currentState.items[index]
+                            ProductCard(
+                                product = item,
+                                onClick = {
+                                    viewModel.setSelectedProduct(item)
+                                },
+                                onAddToCart = { product ->
+                                    shoppingListViewModel.addItemFromMarket(product)
+                                },
+                                productDetails = viewModel.productDetails.value
+                            )
                         }
                     }
                 }
@@ -359,8 +356,8 @@ fun MarketScreen(
                     ) {
                         Text(
                             text = currentState.message,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodyLarge
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color.Red
                         )
                     }
                 }
@@ -371,193 +368,162 @@ fun MarketScreen(
 
 @Composable
 fun ProductCard(
-    item: MarketItem,
+    product: MarketItem,
     onClick: () -> Unit,
-    onAddToCart: (MarketItem) -> Unit
+    onAddToCart: (MarketItem) -> Unit,
+    productDetails: ProductDetailResponse? = null
 ) {
+    // Ürünün kendi satıcı sayısını al
+    val offerCount = product.offer_count ?: 0
+
     Card(
+        onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .animateContentSize()
-            .clickable(onClick = onClick),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            .height(278.dp),
+        shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.White
         ),
-        shape = RoundedCornerShape(12.dp)
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 4.dp,
+            pressedElevation = 8.dp,
+            hoveredElevation = 6.dp
+        )
     ) {
-        Column(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Row(
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Sepete ekle butonu - sağ üst köşede
+            Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(14.dp),
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-                verticalAlignment = Alignment.Top
+                    .size(48.dp)
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp)
+                    .clip(CircleShape)
+                    .background(PrimaryColor)
+                    .clickable {
+                        Log.d("MarketScreen", "Sepete ekle butonuna tıklandı: ${product.name}")
+                        onAddToCart(product)
+                    },
+                contentAlignment = Alignment.Center
             ) {
-                // Image URL handling
-                val imageUrl = if (item.image.startsWith("/")) {
-                    "http://10.0.2.2:8000${item.image}"
-                } else if (item.image.contains("file=")) {
-                    val filename = item.image.substringAfter("file=").substringBefore("&")
-                    "http://10.0.2.2:8000//image.php?file=${filename}&size=md"
-                } else {
-                    "http://10.0.2.2:8000//image.php?file=${item.image}&size=md"
-                }
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = "Sepete Ekle",
+                    tint = Color.White,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
 
-                Log.d("MarketApp", "Using image URL: $imageUrl")
-
-                // Product Image
-                Box(
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(12.dp)
+            ) {
+                // Ürün resmi
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(
+                            if (product.image.startsWith("/")) {
+                                "http://10.0.2.2:8000${product.image}"
+                            } else if (product.image.contains("file=")) {
+                                val filename = product.image.substringAfter("file=").substringBefore("&")
+                                "http://10.0.2.2:8000/image.php?file=${filename}&size=md"
+                            } else {
+                                "http://10.0.2.2:8000/image.php?file=${product.image}&size=md"
+                            }
+                        )
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = product.name,
                     modifier = Modifier
-                        .size(90.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(Color(0xFFF5F5F5))
-                ) {
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(imageUrl)
-                            .crossfade(true)
-                            .build(),
-                        contentDescription = item.name,
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Fit
-                    )
-                }
+                        .size(88.dp)
+                        .align(Alignment.CenterHorizontally),
+                    contentScale = ContentScale.Fit
+                )
 
-                // Product Info
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Ürün adı
+                Text(
+                    text = product.name,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        lineHeight = 20.sp
+                    ),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                Spacer(modifier = Modifier.height(15.dp))
+
+                // Satıcı bilgileri
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center
                 ) {
-                    // Unit count badge and store logo
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                    Box(
+                        modifier = Modifier
+                            .width(140.dp)
+                            .height(30.dp)
+                            .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(8.dp))
+                            .padding(horizontal = 8.dp),
+                        contentAlignment = Alignment.Center
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            // Unit count badge (e.g. 40 lt)
-                            Box(
-                                modifier = Modifier
-                                    .background(
-                                        color = MaterialTheme.colorScheme.primaryContainer,
-                                        shape = RoundedCornerShape(6.dp)
+                            // Mağaza logosu
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(
+                                        if (product.merchant_logo.startsWith("/")) {
+                                            "http://10.0.2.2:8000${product.merchant_logo}"
+                                        } else {
+                                            "http://10.0.2.2:8000/${product.merchant_logo}"
+                                        }
                                     )
-                                    .padding(horizontal = 10.dp, vertical = 5.dp)
-                            ) {
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .height(20.dp)
+                                    .width(50.dp),
+                                contentScale = ContentScale.Fit
+                            )
+
+                            // Satıcı sayısı
+                            if (offerCount > 0) {
                                 Text(
-                                    text = "${item.quantity} ${item.unit}",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            }
-
-                            // Store logo - using merchant_logo field directly
-                            if (item.merchant_logo.isNotEmpty()) {
-                                val logoUrl = if (item.merchant_logo.startsWith("/")) {
-                                    "http://10.0.2.2:8000${item.merchant_logo}"
-                                } else {
-                                    "http://10.0.2.2:8000/${item.merchant_logo}"
-                                }
-
-                                AsyncImage(
-                                    model = ImageRequest.Builder(LocalContext.current)
-                                        .data(logoUrl)
-                                        .crossfade(true)
-                                        .build(),
-                                    contentDescription = "Store logo",
-                                    modifier = Modifier
-                                        .width(70.dp)
-                                        .height(45.dp)
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(8.dp)),
-                                    contentScale = ContentScale.Fit
+                                    text = "+${offerCount} satıcı",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = Color.Gray
                                 )
                             }
                         }
+                    }
+                }
 
-                        // Brand name - more prominent
+                Spacer(modifier = Modifier.height(25.dp))
+
+                // Fiyat bilgileri
+                Column {
+                    Text(
+                        text = "${product.price.toInt()},00 TL",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.ExtraBold
+                        ),
+                        color = PrimaryColor
+                    )
+                    
+                    if (product.unit_price > 0) {
                         Text(
-                            text = item.brand,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color(0xFF2196F3),
-                            fontWeight = FontWeight.Bold
+                            text = "${String.format("%.2f", product.unit_price)} TL/${product.unit}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.Gray
                         )
                     }
-
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                    // Product name
-                    Text(
-                        text = item.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
-
-            Divider(color = Color(0xFFEEEEEE), thickness = 1.dp)
-
-            // Price section with add to cart button
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Unit price
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Birim Fiyat",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
-                    )
-                    Text(
-                        text = "${item.unit_price} ₺",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                // Total price
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Fiyat",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.Gray
-                    )
-                    Text(
-                        text = "${item.price} ₺",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color(0xFF2196F3),
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-
-                // Add to cart button - now aligned with prices
-                IconButton(
-                    onClick = { 
-                        Log.d("MarketScreen", "Sepete ekle butonuna tıklandı: ${item.name}")
-                        onAddToCart(item) 
-                    },
-                    modifier = Modifier
-                        .size(36.dp)
-                        .background(Color(0xFF2196F3), CircleShape)
-                ) {
-                    Icon(
-                        Icons.Default.Add,
-                        contentDescription = "Sepete Ekle",
-                        tint = Color.White
-                    )
                 }
             }
         }
@@ -1233,3 +1199,4 @@ fun OfferCard(
         }
     }
 }
+
