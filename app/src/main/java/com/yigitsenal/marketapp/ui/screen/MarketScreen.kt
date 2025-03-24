@@ -61,6 +61,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -348,6 +349,13 @@ fun MarketScreen(
                                 productDetails = viewModel.productDetails.value,
                                 shoppingListViewModel = shoppingListViewModel
                             )
+
+                            // Son öğeye yaklaşıldığında daha fazla ürün yükle
+                            if (index >= currentState.items.size - 8) {
+                                LaunchedEffect(key1 = index) {
+                                    viewModel.loadMoreProducts()
+                                }
+                            }
                         }
                     }
                 }

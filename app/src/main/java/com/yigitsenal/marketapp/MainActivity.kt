@@ -1,14 +1,19 @@
 package com.yigitsenal.marketapp
 
-import android.util.Log
-
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -18,83 +23,114 @@ import androidx.compose.ui.Modifier
 import androidx.lifecycle.ViewModelProvider
 import coil.ImageLoader
 import coil.ImageLoaderFactory
-import coil.disk.DiskCache
-import coil.memory.MemoryCache
-import coil.request.CachePolicy
+import coil.annotation.ExperimentalCoilApi
 import coil.util.DebugLogger
-import com.yigitsenal.marketapp.data.local.MarketDatabase
-import com.yigitsenal.marketapp.data.network.RetrofitClient
-import com.yigitsenal.marketapp.data.repository.MarketRepository
-import com.yigitsenal.marketapp.data.repository.ShoppingListRepository
 import com.yigitsenal.marketapp.ui.screen.MarketScreen
 import com.yigitsenal.marketapp.ui.screen.ShoppingListScreen
 import com.yigitsenal.marketapp.ui.theme.MarketAppTheme
 import com.yigitsenal.marketapp.ui.viewmodel.MarketViewModel
-import com.yigitsenal.marketapp.ui.viewmodel.MarketViewModelFactory
 import com.yigitsenal.marketapp.ui.viewmodel.ShoppingListViewModel
-import com.yigitsenal.marketapp.ui.viewmodel.ShoppingListViewModelFactory
+import coil.request.CachePolicy
 
+@OptIn(ExperimentalCoilApi::class)
 class MainActivity : ComponentActivity(), ImageLoaderFactory {
+    private lateinit var marketViewModel: MarketViewModel
+    private lateinit var shoppingListViewModel: ShoppingListViewModel
+    private lateinit var marketViewModelFactory: ViewModelProvider.Factory
+    private lateinit var shoppingListViewModelFactory: ViewModelProvider.Factory
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        
-        Log.d("MarketApp", "Creating custom ImageLoader for debugging")
-        
-        val database = MarketDatabase.getDatabase(applicationContext)
-        val marketDao = database.marketItemDao()
-        val shoppingListDao = database.shoppingListDao()
-        val shoppingListItemDao = database.shoppingListItemDao()
-        
-        val apiService = RetrofitClient.getApiService()
-        
-        val marketRepository = MarketRepository(marketDao, apiService)
-        val shoppingListRepository = ShoppingListRepository(shoppingListDao, shoppingListItemDao)
-        
-        val marketViewModelFactory = MarketViewModelFactory(marketRepository)
-        val shoppingListViewModelFactory = ShoppingListViewModelFactory(shoppingListRepository)
-        
+
+        // ViewModelFactory'leri oluştur
+        val appContainer = (application as MarketApplication).container
+        marketViewModelFactory = appContainer.marketViewModelFactory
+        shoppingListViewModelFactory = appContainer.shoppingListViewModelFactory
+
         setContent {
             MarketAppTheme {
                 val marketViewModel = ViewModelProvider(this, marketViewModelFactory)[MarketViewModel::class.java]
                 val shoppingListViewModel = ViewModelProvider(this, shoppingListViewModelFactory)[ShoppingListViewModel::class.java]
                 
-                var currentScreen by remember { mutableStateOf(Screen.SHOPPING_LIST) }
-                
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    when (currentScreen) {
-                        Screen.SHOPPING_LIST -> {
-                            ShoppingListScreen(
-                                viewModel = shoppingListViewModel,
-                                onNavigateToMarket = { currentScreen = Screen.MARKET },
-                                modifier = Modifier.padding(innerPadding)
-                            )
-                        }
-                        Screen.MARKET -> {
-                            MarketScreen(
-                                viewModel = marketViewModel,
-                                modifier = Modifier.padding(innerPadding),
-                                onBackPressed = { currentScreen = Screen.SHOPPING_LIST },
-                                shoppingListViewModel = shoppingListViewModel
-                            )
-                        }
-                    }
-                }
+                MainScreen(
+                    marketViewModel = marketViewModel,
+                    shoppingListViewModel = shoppingListViewModel
+                )
             }
         }
     }
     
     override fun newImageLoader(): ImageLoader {
         return ImageLoader.Builder(this)
-            .memoryCachePolicy(CachePolicy.DISABLED) // Disable memory cache for debugging
-            .diskCachePolicy(CachePolicy.DISABLED) // Disable disk cache for debugging
-            .logger(DebugLogger()) // Enable debug logging
-            .respectCacheHeaders(false) // Ignore cache headers
+            .memoryCachePolicy(CachePolicy.DISABLED)
+            .diskCachePolicy(CachePolicy.DISABLED)
+            .logger(DebugLogger())
+            .respectCacheHeaders(false)
             .build()
     }
 }
 
 enum class Screen {
-    SHOPPING_LIST,
-    MARKET
+    HOME,
+    SEARCH,
+    CART
+}
+
+@Composable
+fun MainScreen(
+    marketViewModel: MarketViewModel,
+    shoppingListViewModel: ShoppingListViewModel
+) {
+    var currentScreen by remember { mutableStateOf(Screen.HOME) }
+
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        bottomBar = {
+            NavigationBar {
+                NavigationBarItem(
+                    icon = { Icon(Icons.Default.Home, contentDescription = "Ana Sayfa") },
+                    label = { Text("Ana Sayfa") },
+                    selected = currentScreen == Screen.HOME,
+                    onClick = { currentScreen = Screen.HOME }
+                )
+                NavigationBarItem(
+                    icon = { Icon(Icons.Default.Search, contentDescription = "Ürün Arama") },
+                    label = { Text("Ürün Arama") },
+                    selected = currentScreen == Screen.SEARCH,
+                    onClick = { currentScreen = Screen.SEARCH }
+                )
+                NavigationBarItem(
+                    icon = { Icon(Icons.Default.ShoppingCart, contentDescription = "Sepet") },
+                    label = { Text("Sepet") },
+                    selected = currentScreen == Screen.CART,
+                    onClick = { currentScreen = Screen.CART }
+                )
+            }
+        }
+    ) { innerPadding ->
+        when (currentScreen) {
+            Screen.HOME -> {
+                // Ana sayfa ekranı
+                Text(
+                    text = "Ana Sayfa",
+                    modifier = Modifier.padding(innerPadding)
+                )
+            }
+            Screen.SEARCH -> {
+                MarketScreen(
+                    viewModel = marketViewModel,
+                    modifier = Modifier.padding(innerPadding),
+                    onBackPressed = { currentScreen = Screen.HOME },
+                    shoppingListViewModel = shoppingListViewModel
+                )
+            }
+            Screen.CART -> {
+                ShoppingListScreen(
+                    viewModel = shoppingListViewModel,
+                    onNavigateToMarket = { currentScreen = Screen.SEARCH },
+                    modifier = Modifier.padding(innerPadding)
+                )
+            }
+        }
+    }
 }

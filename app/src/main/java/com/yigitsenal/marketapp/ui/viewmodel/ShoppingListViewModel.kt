@@ -273,6 +273,16 @@ class ShoppingListViewModel(
         _selectedItems.value = emptySet()
         _isSelectionMode.value = false
     }
+
+    fun updateItemQuantity(item: ShoppingListItem, newQuantity: Double) {
+        viewModelScope.launch {
+            val updatedItem = item.copy(
+                quantity = newQuantity,
+                price = (newQuantity * item.unitPrice)
+            )
+            repository.updateItem(updatedItem)
+        }
+    }
 }
 
 class ShoppingListViewModelFactory(private val repository: ShoppingListRepository) : ViewModelProvider.Factory {

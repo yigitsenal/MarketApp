@@ -29,6 +29,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.List
@@ -117,23 +118,18 @@ fun ShoppingListScreen(
                 )
             },
             confirmButton = {
-                Button(
+                TextButton(
                     onClick = {
                         if (isSelectionMode) {
                             viewModel.deleteSelectedItems()
                         } else {
-                            itemToDelete?.let {
-                                viewModel.deleteItem(it)
-                            }
+                            itemToDelete?.let { viewModel.deleteItem(it) }
                         }
                         showDeleteDialog = false
                         itemToDelete = null
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.Red
-                    )
+                    }
                 ) {
-                    Text("Sil")
+                    Text("Evet")
                 }
             },
             dismissButton = {
@@ -144,7 +140,7 @@ fun ShoppingListScreen(
                         viewModel.clearSelection()
                     }
                 ) {
-                    Text("İptal")
+                    Text("Hayır")
                 }
             }
         )
@@ -229,6 +225,9 @@ fun ShoppingListScreen(
                     onItemDelete = { 
                         itemToDelete = it
                         showDeleteDialog = true
+                    },
+                    onQuantityChange = { item, newQuantity ->
+                        viewModel.updateItemQuantity(item, newQuantity)
                     }
                 )
             }
@@ -369,34 +368,6 @@ fun EmptyListView(
     }
 }
 
-@Composable
-fun ShoppingListContent(
-    items: List<ShoppingListItem>,
-    selectedItems: Set<ShoppingListItem>,
-    isSelectionMode: Boolean,
-    onItemClick: (ShoppingListItem) -> Unit,
-    onItemLongClick: (ShoppingListItem) -> Unit,
-    onItemDelete: (ShoppingListItem) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    LazyColumn(
-        modifier = modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-        contentPadding = PaddingValues(8.dp)
-    ) {
-        items(items) { item ->
-            ShoppingListItemRow(
-                item = item,
-                isSelected = item in selectedItems,
-                isSelectionMode = isSelectionMode,
-                onItemClick = { onItemClick(item) },
-                onItemLongClick = { onItemLongClick(item) },
-                onDeleteClick = { onItemDelete(item) }
-            )
-        }
-    }
-}
-
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ShoppingListItemRow(
@@ -406,6 +377,7 @@ fun ShoppingListItemRow(
     onItemClick: () -> Unit,
     onItemLongClick: () -> Unit,
     onDeleteClick: () -> Unit,
+    onQuantityChange: (Double) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -433,134 +405,152 @@ fun ShoppingListItemRow(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Sol taraf: Checkbox, ürün görseli ve bilgileri
+            // Sol taraf: Ürün bilgileri
             Row(
                 modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                if (isSelectionMode) {
-                    Checkbox(
-                        checked = isSelected,
-                        onCheckedChange = { onItemClick() },
-                        modifier = Modifier.padding(end = 4.dp)
-                    )
-                }
-
-                // Ürün görseli
-                Card(
-                    shape = RoundedCornerShape(12.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-                ) {
+                // Ürün resmi
+                if (item.imageUrl.isNotEmpty()) {
                     AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(item.imageUrl)
-                            .crossfade(true)
-                            .build(),
+                        model = item.imageUrl,
                         contentDescription = item.name,
                         modifier = Modifier
-                            .size(72.dp)
-                            .clip(RoundedCornerShape(12.dp)),
-                        contentScale = ContentScale.Crop,
-                        placeholder = painterResource(id = R.drawable.placeholder_image),
-                        error = painterResource(id = R.drawable.placeholder_image)
+                            .size(48.dp)
+                            .clip(RoundedCornerShape(8.dp)),
+                        contentScale = ContentScale.Fit
                     )
+                    Spacer(modifier = Modifier.width(12.dp))
                 }
 
-                // Ürün bilgileri
+                // Ürün adı ve fiyat bilgileri
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier.weight(1f)
                 ) {
-                    // Ürün adı
                     Text(
                         text = item.name,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = if (item.isCompleted) Color.Gray else Color.Black,
-                        textDecoration = if (item.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                        style = MaterialTheme.typography.bodyLarge,
+                        textDecoration = if (item.isCompleted) TextDecoration.LineThrough else TextDecoration.None
                     )
-
-                    // Miktar ve mağaza logosu
+                    
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // Miktar gösterimi
-                        Card(
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.primaryContainer
-                            ),
-                            shape = RoundedCornerShape(8.dp)
-                        ) {
-                            Text(
-                                text = "${item.quantity.toInt()} adet",
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                            )
-                        }
-
                         // Mağaza logosu
-                        Card(
-                            shape = RoundedCornerShape(8.dp),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.White),
-                            modifier = Modifier
-                                .width(74.dp)
-                                .height(45.dp)
-                        ) {
+                        if (item.merchantLogo.isNotEmpty()) {
                             AsyncImage(
-                                model = ImageRequest.Builder(LocalContext.current)
-                                    .data(item.merchantLogo)
-                                    .crossfade(true)
-                                    .build(),
+                                model = item.merchantLogo,
                                 contentDescription = null,
                                 modifier = Modifier
-                                    .width(70.dp)
-                                    .height(45.dp)
-                                    .clip(RoundedCornerShape(8.dp)),
-
-                                contentScale = ContentScale.Fit,
-                                placeholder = painterResource(id = R.drawable.placeholder_image),
-                                error = painterResource(id = R.drawable.placeholder_image)
+                                    .height(16.dp)
+                                    .width(48.dp),
+                                contentScale = ContentScale.Fit
                             )
                         }
+                        
+                        Text(
+                            text = "${item.price.toInt()} TL",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
             }
 
-            // Sağ taraf: Fiyat ve silme butonu
-            Column(
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+            // Sağ taraf: Miktar kontrolleri ve silme butonu
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                // Fiyat
-                Text(
-                    text = "₺${String.format("%.2f", item.price)}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = if (item.isCompleted) Color.Gray else PrimaryColor,
-                    textDecoration = if (item.isCompleted) TextDecoration.LineThrough else TextDecoration.None
-                )
+                // Miktar kontrolleri
+                Row(
+                    modifier = Modifier
+                        .height(36.dp)
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(MaterialTheme.colorScheme.primaryContainer)
+                        .padding(horizontal = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    // Azaltma butonu
+                    Icon(
+                        imageVector = Icons.Default.Clear,
+                        contentDescription = "Azalt",
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier
+                            .size(20.dp)
+                            .clickable {
+                                if (item.quantity > 1) {
+                                    onQuantityChange(item.quantity - 1)
+                                }
+                            }
+                    )
+                    
+                    // Miktar
+                    Text(
+                        text = item.quantity.toInt().toString(),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    
+                    // Artırma butonu
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Artır",
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier
+                            .size(20.dp)
+                            .clickable {
+                                onQuantityChange(item.quantity + 1)
+                            }
+                    )
+                }
 
                 // Silme butonu
                 if (!isSelectionMode) {
                     IconButton(
                         onClick = onDeleteClick,
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(36.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Delete,
                             contentDescription = "Sil",
-                            tint = Color.Red.copy(alpha = 0.7f),
-                            modifier = Modifier.size(20.dp)
+                            tint = Color.Red
                         )
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun ShoppingListContent(
+    items: List<ShoppingListItem>,
+    selectedItems: Set<ShoppingListItem>,
+    isSelectionMode: Boolean,
+    onItemClick: (ShoppingListItem) -> Unit,
+    onItemLongClick: (ShoppingListItem) -> Unit,
+    onItemDelete: (ShoppingListItem) -> Unit,
+    onQuantityChange: (ShoppingListItem, Double) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        contentPadding = PaddingValues(8.dp)
+    ) {
+        items(items) { item ->
+            ShoppingListItemRow(
+                item = item,
+                isSelected = item in selectedItems,
+                isSelectionMode = isSelectionMode,
+                onItemClick = { onItemClick(item) },
+                onItemLongClick = { onItemLongClick(item) },
+                onDeleteClick = { onItemDelete(item) },
+                onQuantityChange = { newQuantity -> onQuantityChange(item, newQuantity) }
+            )
         }
     }
 } 

@@ -29,6 +29,12 @@ class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
     private val _newItemText = MutableStateFlow("")
     val newItemText: StateFlow<String> = _newItemText
 
+    // Pagination için state'ler
+    private var currentPage = 1
+    private var isLastPage = false
+    private var isLoading = false
+    private val _products = MutableStateFlow<List<MarketItem>>(emptyList())
+
     // Seçilen ürün için state ekleyelim
     private val _selectedProduct = MutableStateFlow<MarketItem?>(null)
     val selectedProduct: StateFlow<MarketItem?> = _selectedProduct
@@ -61,7 +67,6 @@ class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
 
     init {
         loadItems()
-        observeSearchText()
     }
 
     private fun observeSearchText() {
@@ -70,7 +75,7 @@ class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
                 .debounce(300)
                 .collect { query ->
                     if (query.isNotEmpty()) {
-                        searchProducts()
+                        searchProducts(query)
                     } else {
                         loadItems()
                     }
@@ -88,37 +93,88 @@ class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
         }
     }
 
-    private fun searchProducts() {
+    fun updateNewItemText(text: String) {
+        _newItemText.value = text
+        searchProducts(text)
+    }
+
+    fun searchProducts(query: String, isNewSearch: Boolean = true) {
+        // Önceki aramayı iptal et
         searchJob?.cancel()
+        
+        // Yeni arama ise sayfayı sıfırla
+        if (isNewSearch) {
+            currentPage = 1
+            isLastPage = false
+            _products.value = emptyList()
+            _uiState.value = MarketUiState.Loading
+        }
+        
+        // Eğer son sayfaya ulaşıldıysa veya yükleme devam ediyorsa yeni sorgu yapma
+        if (isLastPage || isLoading) return
+        
+        // Boş sorgu kontrolü
+        if (query.trim().isEmpty()) {
+            _uiState.value = MarketUiState.Success(emptyList())
+            return
+        }
+
         searchJob = viewModelScope.launch {
             try {
-                _uiState.value = MarketUiState.Loading
+                isLoading = true
+                
+                // Kısa bir delay ekle
+                delay(100)
+                
                 val response = repository.searchProducts(
-                    query = _newItemText.value,
-                    sort = _sortOption.value
+                    query = query,
+                    sort = _sortOption.value,
+                    page = currentPage
                 )
                 
-                if (response.success && response.products?.isNotEmpty() == true) {
-                    _uiState.value = MarketUiState.Success(response.products)
+                if (response.success && response.products != null) {
+                    val newProducts = response.products
+                    
+                    // Son sayfa kontrolü
+                    if (newProducts.isEmpty()) {
+                        isLastPage = true
+                    } else {
+                        currentPage++
+                        // Mevcut listeye yeni ürünleri ekle
+                        val updatedProducts = if (isNewSearch) {
+                            newProducts
+                        } else {
+                            _products.value + newProducts
+                        }
+                        _products.value = updatedProducts
+                        _uiState.value = MarketUiState.Success(updatedProducts)
+                    }
                 } else {
-                    _uiState.value = MarketUiState.Success(emptyList())
+                    if (isNewSearch) {
+                        _uiState.value = MarketUiState.Success(emptyList())
+                    }
                 }
             } catch (e: Exception) {
                 Log.e("MarketViewModel", "Error searching products", e)
                 _uiState.value = MarketUiState.Error("Arama sırasında bir hata oluştu: ${e.message}")
+            } finally {
+                isLoading = false
             }
         }
     }
 
-    fun updateNewItemText(text: String) {
-        _newItemText.value = text
+    // Daha fazla ürün yüklemek için fonksiyon
+    fun loadMoreProducts() {
+        if (!isLoading && !isLastPage && _newItemText.value.isNotEmpty()) {
+            searchProducts(_newItemText.value, false)
+        }
     }
 
     // Sıralama seçeneğini güncellemek için fonksiyon
     fun updateSortOption(sort: String?) {
         _sortOption.value = sort
         if (_newItemText.value.isNotEmpty()) {
-            searchProducts()
+            searchProducts(_newItemText.value)
         } else {
             loadItems()
         }
