@@ -150,7 +150,7 @@ class ShoppingListViewModel(
             if (existingItem != null) {
                 // Aynı mağazadan aynı ürün varsa miktarını ve fiyatını güncelle
                 val updatedItem = existingItem.copy(
-                    quantity = existingItem.quantity + 1.0, // Her zaman 1 adet artır
+                    quantity = existingItem.quantity + 1.0,
                     price = existingItem.price + marketItem.price
                 )
                 repository.updateItem(updatedItem)
@@ -159,7 +159,7 @@ class ShoppingListViewModel(
                 val newItem = ShoppingListItem(
                     listId = _activeShoppingList.value?.id ?: 0,
                     name = marketItem.name,
-                    quantity = 1.0, // Başlangıç adeti 1
+                    quantity = 1.0,
                     unit = "adet",
                     price = marketItem.price,
                     unitPrice = marketItem.unit_price,
@@ -169,6 +169,44 @@ class ShoppingListViewModel(
                     isCompleted = false
                 )
                 repository.insertItem(newItem)
+            }
+        }
+    }
+    
+    fun increaseItemQuantity(marketItem: MarketItem) {
+        viewModelScope.launch {
+            val existingItem = activeListItems.value.find { item ->
+                item.name == marketItem.name && 
+                item.merchantId == marketItem.merchant_id
+            }
+
+            if (existingItem != null) {
+                val updatedItem = existingItem.copy(
+                    quantity = existingItem.quantity + 1.0,
+                    price = existingItem.price + marketItem.price
+                )
+                repository.updateItem(updatedItem)
+            }
+        }
+    }
+    
+    fun decreaseItemQuantity(marketItem: MarketItem) {
+        viewModelScope.launch {
+            val existingItem = activeListItems.value.find { item ->
+                item.name == marketItem.name && 
+                item.merchantId == marketItem.merchant_id
+            }
+
+            if (existingItem != null) {
+                if (existingItem.quantity > 1) {
+                    val updatedItem = existingItem.copy(
+                        quantity = existingItem.quantity - 1.0,
+                        price = existingItem.price - marketItem.price
+                    )
+                    repository.updateItem(updatedItem)
+                } else {
+                    repository.deleteItem(existingItem)
+                }
             }
         }
     }

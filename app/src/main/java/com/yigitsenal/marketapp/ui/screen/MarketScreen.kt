@@ -33,6 +33,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.List
@@ -344,7 +345,8 @@ fun MarketScreen(
                                 onAddToCart = { product ->
                                     shoppingListViewModel.addItemFromMarket(product)
                                 },
-                                productDetails = viewModel.productDetails.value
+                                productDetails = viewModel.productDetails.value,
+                                shoppingListViewModel = shoppingListViewModel
                             )
                         }
                     }
@@ -371,10 +373,17 @@ fun ProductCard(
     product: MarketItem,
     onClick: () -> Unit,
     onAddToCart: (MarketItem) -> Unit,
-    productDetails: ProductDetailResponse? = null
+    productDetails: ProductDetailResponse? = null,
+    shoppingListViewModel: ShoppingListViewModel
 ) {
     // Ürünün kendi satıcı sayısını al
     val offerCount = product.offer_count ?: 0
+    
+    // Ürün miktarını takip etmek için state
+    val activeListItems by shoppingListViewModel.activeListItems.collectAsState()
+    val quantity = activeListItems.find { item -> 
+        item.name == product.name && item.merchantId == product.merchant_id 
+    }?.quantity?.toInt() ?: 0
 
     Card(
         onClick = onClick,
@@ -392,28 +401,6 @@ fun ProductCard(
         )
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Sepete ekle butonu - sağ üst köşede
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .align(Alignment.TopEnd)
-                    .padding(8.dp)
-                    .clip(CircleShape)
-                    .background(PrimaryColor)
-                    .clickable {
-                        Log.d("MarketScreen", "Sepete ekle butonuna tıklandı: ${product.name}")
-                        onAddToCart(product)
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Default.Add,
-                    contentDescription = "Sepete Ekle",
-                    tint = Color.White,
-                    modifier = Modifier.size(16.dp)
-                )
-            }
-
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -522,6 +509,78 @@ fun ProductCard(
                             text = "${String.format("%.2f", product.unit_price)} TL/${product.unit}",
                             style = MaterialTheme.typography.bodySmall,
                             color = Color.Gray
+                        )
+                    }
+                }
+            }
+
+            // Sepete ekle butonu veya miktar kontrolleri - sağ üst köşede
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(8.dp)
+
+            ) {
+                if (quantity == 0) {
+                    // Sepete ekle butonu
+                    Box(
+                        modifier = Modifier
+                            .size(24.dp)
+                            .clip(CircleShape)
+                            .background(PrimaryColor)
+                            .clickable {
+                                onAddToCart(product)
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = "Sepete Ekle",
+                            tint = Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                } else {
+                    // Miktar kontrol butonları
+                    Row(
+                        modifier = Modifier
+                            .height(48.dp)
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(PrimaryColor)
+                            .padding(horizontal = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Silme/azaltma butonu
+                        Icon(
+                            if (quantity == 1) Icons.Default.Close else Icons.Default.Delete,
+                            contentDescription = if (quantity == 1) "Sil" else "Azalt",
+                            tint = Color.White,
+                            modifier = Modifier
+                                .size(20.dp)
+                                .clickable {
+                                    shoppingListViewModel.decreaseItemQuantity(product)
+                                }
+                        )
+                        
+                        // Miktar
+                        Text(
+                            text = quantity.toString(),
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                        
+                        // Artırma butonu
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = "Artır",
+                            tint = Color.White,
+                            modifier = Modifier
+                                .size(20.dp)
+                                .clickable {
+                                    shoppingListViewModel.increaseItemQuantity(product)
+                                }
                         )
                     }
                 }
