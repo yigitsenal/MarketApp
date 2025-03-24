@@ -266,11 +266,13 @@ fun MarketScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
-                            Text(
-                                text = "\"${searchText}\" arama sonuçları",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold
-                            )
+                           if (searchText.isNotEmpty()) {
+                                Text(
+                                    text = "${searchText} Fiyatları",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                             
                             // Başlık altında ürün sayısı
                             Text(
@@ -325,35 +327,49 @@ fun MarketScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator()
+                        CircularProgressIndicator(color = PrimaryColor)
                     }
                 }
                 is MarketUiState.Success -> {
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        contentPadding = PaddingValues(16.dp),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        items(currentState.items.size) { index ->
-                            val item = currentState.items[index]
-                            ProductCard(
-                                product = item,
-                                onClick = {
-                                    viewModel.setSelectedProduct(item)
-                                },
-                                onAddToCart = { product ->
-                                    shoppingListViewModel.addItemFromMarket(product)
-                                },
-                                productDetails = viewModel.productDetails.value,
-                                shoppingListViewModel = shoppingListViewModel
+                    if (currentState.items.isEmpty() && searchText.isNotEmpty()) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Sonuç bulunamadı",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = Color.Gray
                             )
+                        }
+                    } else {
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(2),
+                            contentPadding = PaddingValues(16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            items(currentState.items.size) { index ->
+                                val item = currentState.items[index]
+                                ProductCard(
+                                    product = item,
+                                    onClick = {
+                                        viewModel.setSelectedProduct(item)
+                                    },
+                                    onAddToCart = { product ->
+                                        shoppingListViewModel.addItemFromMarket(product)
+                                    },
+                                    productDetails = viewModel.productDetails.value,
+                                    shoppingListViewModel = shoppingListViewModel
+                                )
 
-                            // Son öğeye yaklaşıldığında daha fazla ürün yükle
-                            if (index >= currentState.items.size - 8) {
-                                LaunchedEffect(key1 = index) {
-                                    viewModel.loadMoreProducts()
+                                // Son öğeye yaklaşıldığında daha fazla ürün yükle
+                                if (index >= currentState.items.size - 4) {
+                                    LaunchedEffect(key1 = Unit) {
+                                        Log.d("MarketScreen", "Son öğelere yaklaşıldı, daha fazla ürün yükleniyor")
+                                        viewModel.loadMoreProducts()
+                                    }
                                 }
                             }
                         }
@@ -364,11 +380,25 @@ fun MarketScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = currentState.message,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = Color.Red
-                        )
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Text(
+                                text = currentState.message,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = Color.Red,
+                                textAlign = TextAlign.Center
+                            )
+                            ElevatedButton(
+                                onClick = { viewModel.searchProducts(searchText) },
+                                colors = ButtonDefaults.elevatedButtonColors(
+                                    containerColor = PrimaryColor
+                                )
+                            ) {
+                                Text("Tekrar Dene")
+                            }
+                        }
                     }
                 }
             }

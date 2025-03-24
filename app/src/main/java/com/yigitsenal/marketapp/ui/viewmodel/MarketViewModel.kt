@@ -123,17 +123,14 @@ class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
             try {
                 isLoading = true
                 
-                // Kısa bir delay ekle
-                delay(100)
-                
                 val response = repository.searchProducts(
                     query = query,
                     sort = _sortOption.value,
                     page = currentPage
                 )
                 
-                if (response.success && response.products != null) {
-                    val newProducts = response.products
+                if (response.success) {
+                    val newProducts = response.products ?: emptyList()
                     
                     // Son sayfa kontrolü
                     if (newProducts.isEmpty()) {
@@ -148,15 +145,19 @@ class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
                         }
                         _products.value = updatedProducts
                         _uiState.value = MarketUiState.Success(updatedProducts)
+                        Log.d("MarketViewModel", "Ürünler güncellendi. Toplam: ${updatedProducts.size}")
                     }
                 } else {
                     if (isNewSearch) {
                         _uiState.value = MarketUiState.Success(emptyList())
+                        Log.d("MarketViewModel", "Arama başarısız oldu veya sonuç bulunamadı")
                     }
                 }
             } catch (e: Exception) {
                 Log.e("MarketViewModel", "Error searching products", e)
-                _uiState.value = MarketUiState.Error("Arama sırasında bir hata oluştu: ${e.message}")
+                if (isNewSearch) {
+                    _uiState.value = MarketUiState.Error("Arama sırasında bir hata oluştu: ${e.message}")
+                }
             } finally {
                 isLoading = false
             }
@@ -166,6 +167,7 @@ class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
     // Daha fazla ürün yüklemek için fonksiyon
     fun loadMoreProducts() {
         if (!isLoading && !isLastPage && _newItemText.value.isNotEmpty()) {
+            Log.d("MarketViewModel", "Daha fazla ürün yükleniyor. Sayfa: $currentPage")
             searchProducts(_newItemText.value, false)
         }
     }
