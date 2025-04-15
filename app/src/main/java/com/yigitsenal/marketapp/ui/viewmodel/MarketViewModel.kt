@@ -103,7 +103,7 @@ class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
         searchJob?.cancel()
         
         // Çok kısa sorgular için arama yapma
-        if (query.trim().length < 3) {
+        if (query.trim().length < 2) {
             if (isNewSearch) {
                 _uiState.value = MarketUiState.Success(emptyList())
             }
@@ -190,13 +190,16 @@ class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
     // Seçilen ürünü güncellemek için metodu ekleyelim
     fun setSelectedProduct(product: MarketItem?) {
         _selectedProduct.value = product
-        
-        // Fiyat tahminini sıfırla
-        _pricePrediction.value = null
-        
-        // Eğer ürün seçildiyse ve URL değeri varsa, detayları yüklemeyi deneyebiliriz
-        if (product != null && product.url.isNotEmpty()) {
+        // Ürün değiştiğinde detayları yükle
+        if (product != null) {
             loadProductDetails(product.url)
+            // Fiyat tahminini sıfırla
+            _pricePrediction.value = null
+            _isLoadingPricePrediction.value = false
+        } else {
+            _productDetails.value = null
+            _pricePrediction.value = null
+            _isLoadingPricePrediction.value = false
         }
     }
     
@@ -335,22 +338,34 @@ class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
     private fun parseAIResponse(responseText: String): PricePredictionResult {
         try {
             // Regex ile fiyat tahminlerini çıkar
-            val pattern30 = Pattern.compile("30 gün sonrası tahmini fiyat: ([0-9]+[.,]?[0-9]*) ₺")
-            val pattern60 = Pattern.compile("60 gün sonrası tahmini fiyat: ([0-9]+[.,]?[0-9]*) ₺")
-            val pattern90 = Pattern.compile("90 gün sonrası tahmini fiyat: ([0-9]+[.,]?[0-9]*) ₺")
+            val pattern30 = Pattern.compile("30 [Gg]ün:?\\s*([0-9]+[.,]?[0-9]*) ?(?:TL|₺)")
+            val pattern60 = Pattern.compile("60 [Gg]ün:?\\s*([0-9]+[.,]?[0-9]*) ?(?:TL|₺)")
+            val pattern90 = Pattern.compile("90 [Gg]ün:?\\s*([0-9]+[.,]?[0-9]*) ?(?:TL|₺)")
             
             val matcher30 = pattern30.matcher(responseText)
             val matcher60 = pattern60.matcher(responseText)
             val matcher90 = pattern90.matcher(responseText)
             
-            val prediction30 = if (matcher30.find()) matcher30.group(1)?.toDoubleOrNull() else null
-            val prediction60 = if (matcher60.find()) matcher60.group(1)?.toDoubleOrNull() else null
-            val prediction90 = if (matcher90.find()) matcher90.group(1)?.toDoubleOrNull() else null
+            val prediction30 = if (matcher30.find()) {
+                matcher30.group(1)?.replace(",", ".")?.toDoubleOrNull()
+            } else null
+
+            val prediction60 = if (matcher60.find()) {
+                matcher60.group(1)?.replace(",", ".")?.toDoubleOrNull()
+            } else null
+
+            val prediction90 = if (matcher90.find()) {
+                matcher90.group(1)?.replace(",", ".")?.toDoubleOrNull()
+            } else null
             
             // Tahmin nedenleri bölümünü al
-            val analysisPattern = Pattern.compile("Tahminin nedenleri:(.+)", Pattern.DOTALL)
+            val analysisPattern = Pattern.compile("Tahminin nedenleri:?\\s*(.+)", Pattern.DOTALL)
             val analysisMatcher = analysisPattern.matcher(responseText)
             val analysis = if (analysisMatcher.find()) analysisMatcher.group(1)?.trim() else null
+
+            // Debug için yanıtı logla
+            Log.d("MarketViewModel", "AI Response: $responseText")
+            Log.d("MarketViewModel", "Parsed predictions: 30d=$prediction30, 60d=$prediction60, 90d=$prediction90")
             
             return PricePredictionResult(
                 prediction30Days = prediction30,
@@ -418,6 +433,10 @@ class MarketViewModelFactory(private val repository: MarketRepository) : ViewMod
         if (modelClass.isAssignableFrom(MarketViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
             return MarketViewModel(repository) as T
+        }
+        if (modelClass.isAssignableFrom(ProductSearchViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return ProductSearchViewModel(repository) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

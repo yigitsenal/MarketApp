@@ -92,14 +92,10 @@ fun ShoppingListScreen(
     val items by viewModel.activeListItems.collectAsState()
     val isSelectionMode by viewModel.isSelectionMode.collectAsState()
     val selectedItems by viewModel.selectedItems.collectAsState()
-    
-    // Toplam maliyet hesaplama
     val totalCost = items.sumOf { it.price }
-    
-    // Silme işlemi için onay iletişim kutusu
     var showDeleteDialog by remember { mutableStateOf(false) }
     var itemToDelete by remember { mutableStateOf<ShoppingListItem?>(null) }
-    
+
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { 
@@ -145,7 +141,7 @@ fun ShoppingListScreen(
             }
         )
     }
-    
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -184,17 +180,40 @@ fun ShoppingListScreen(
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "Toplam Tutar:",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "₺${String.format("%.2f", totalCost)}",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
+                        // Total price column
+                        Column(
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Text(
+                                text = "Toplam Tutar",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Color.Gray
+                            )
+                            Text(
+                                text = "${String.format("%.2f", totalCost)} ₺",
+                                style = MaterialTheme.typography.headlineMedium,
+                                color = Color(0xFF4285F4), // Primary blue color
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                        
+                        // Complete list button
+                        Button(
+                            onClick = { viewModel.completeShoppingList() },
+                            modifier = Modifier
+                                .height(55.dp)
+                                .width(220.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF4285F4) // Primary blue color
+                            ),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Text(
+                                text = "Listeyi Tamamla",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = Color.White
+                            )
+                        }
                     }
                 }
             }
@@ -537,7 +556,7 @@ fun ShoppingListContent(
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(4.dp),
         contentPadding = PaddingValues(8.dp)
     ) {
@@ -553,4 +572,4 @@ fun ShoppingListContent(
             )
         }
     }
-} 
+}

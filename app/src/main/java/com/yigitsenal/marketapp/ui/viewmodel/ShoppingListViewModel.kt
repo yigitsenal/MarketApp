@@ -276,12 +276,37 @@ class ShoppingListViewModel(
 
     fun updateItemQuantity(item: ShoppingListItem, newQuantity: Double) {
         viewModelScope.launch {
+            val pricePerUnit = item.price / item.quantity
             val updatedItem = item.copy(
                 quantity = newQuantity,
-                price = (newQuantity * item.unitPrice)
+                price = pricePerUnit * newQuantity
             )
             repository.updateItem(updatedItem)
         }
+    }
+    
+    fun completeShoppingList() {
+        viewModelScope.launch {
+            val activeList = _activeShoppingList.value
+            if (activeList != null) {
+                // Listeyi tamamlandı olarak işaretle
+                val completedList = activeList.copy(isCompleted = true)
+                repository.updateShoppingList(completedList)
+                
+                // Yeni boş bir liste oluştur
+                createNewShoppingList("Alışveriş Listem")
+            }
+        }
+    }
+
+    fun deleteCompletedList(list: ShoppingList) {
+        viewModelScope.launch {
+            repository.deleteShoppingList(list)
+        }
+    }
+
+    fun getItemsForList(listId: Int): Flow<List<ShoppingListItem>> {
+        return repository.getItemsForList(listId)
     }
 }
 
@@ -293,4 +318,4 @@ class ShoppingListViewModelFactory(private val repository: ShoppingListRepositor
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }
-} 
+}

@@ -15,7 +15,7 @@ data class ShoppingList(
     val isCompleted: Boolean = false
 ) {
     fun getFormattedDate(): String {
-        val dateFormat = SimpleDateFormat("MMMM yyyy", Locale("tr"))
+        val dateFormat = SimpleDateFormat("dd MMMM yyyy", Locale("tr"))
         return dateFormat.format(Date(date))
     }
     
@@ -24,4 +24,4 @@ data class ShoppingList(
         val completedItems = items.count { it.isCompleted }
         return ((completedItems.toFloat() / items.size) * 100).toInt()
     }
-} 
+}
