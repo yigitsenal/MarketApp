@@ -8,12 +8,19 @@ import com.yigitsenal.marketapp.data.model.ProductDetailResponse
 import com.yigitsenal.marketapp.data.network.MarketApiService
 import com.yigitsenal.marketapp.data.network.SearchResponse
 import kotlinx.coroutines.flow.Flow
+import java.util.concurrent.ConcurrentHashMap
 
 class MarketRepository(
     private val marketItemDao: MarketItemDao,
     private val apiService: MarketApiService? = null
 ) {
     val allItems: Flow<List<MarketItem>> = marketItemDao.getAllItems()
+    
+    // Arama sonuçları için önbellek
+    private val searchCache = ConcurrentHashMap<String, SearchResponse>()
+    
+    // Ürün detayları için önbellek
+    private val detailsCache = ConcurrentHashMap<String, ProductDetailResponse>()
 
     suspend fun insertItem(item: MarketItem) {
         marketItemDao.insertItem(item)
@@ -42,47 +49,84 @@ class MarketRepository(
             .replace('Ö', 'O')
             .replace('Ç', 'C')
             
+        // Önbellek anahtarı oluştur (sorgu + sıralama + sayfa)
+        val cacheKey = "${normalizedQuery}_${sort}_${page}"
+        
+        // Önbellekte bu arama varsa, hemen döndür
+        searchCache[cacheKey]?.let {
+            Log.d("MarketRepository", "Cache hit for query: $normalizedQuery")
+            return it
+        }
+        
+        Log.d("MarketRepository", "Cache miss for query: $normalizedQuery, fetching from API")
         val encodedQuery = java.net.URLEncoder.encode(normalizedQuery, "UTF-8")
         val response = requireNotNull(apiService) { "API service is not initialized" }.searchProducts(encodedQuery, sort, page)
 
-        // Her ürün için detayları yükle ve satıcı sayısını güncelle
+        // Ürünlerin satıcı sayılarını güncelleyelim
         val updatedProducts = response.products?.map { product ->
-            try {
-                if (product.url.isNotEmpty()) {
-                    val details = getProductDetails(product.url)
-                    product.copy(offer_count = details.product.offers.size)
-                } else {
-                    product.copy(offer_count = 0)
-                }
-            } catch (e: Exception) {
-                Log.e("MarketRepository", "Error loading product details for ${product.name}", e)
-                product.copy(offer_count = 0)
+            // Eğer bu ürün için önbellekte bir detay bilgisi varsa satıcı sayısını oradan al
+            val cachedDetails = product.url.takeIf { it.isNotEmpty() }?.let { url ->
+                val path = if (url.contains("?path=")) url.substringAfter("?path=") else url
+                val decodedPath = java.net.URLDecoder.decode(path, "UTF-8")
+                detailsCache[decodedPath]
+            }
+            
+            if (cachedDetails != null) {
+                // Önbellekte varsa satıcı sayısını güncelle
+                product.copy(offer_count = cachedDetails.product.offers.size)
+            } else {
+                // Önbellekte yoksa varsayılan değer
+                product
             }
         } ?: emptyList()
-
-        return response.copy(products = updatedProducts)
+        
+        // Güncellenmiş ürünlerle yeni bir yanıt oluştur
+        val updatedResponse = response.copy(
+            products = updatedProducts
+        )
+        
+        // Sonucu önbelleğe al
+        searchCache[cacheKey] = updatedResponse
+        
+        return updatedResponse
     }
     
     suspend fun getProductDetails(productPath: String): ProductDetailResponse {
         Log.d("MarketRepository", "Getting product details for path: $productPath")
+        
+        val cleanPath = if (productPath.contains("?path=")) {
+            productPath.substringAfter("?path=")
+        } else {
+            productPath
+        }
+        
+        val decodedPath = java.net.URLDecoder.decode(cleanPath, "UTF-8")
+        
+        // Önbellekte bu ürün detayı varsa, hemen döndür
+        detailsCache[decodedPath]?.let {
+            Log.d("MarketRepository", "Cache hit for product details: ${decodedPath}")
+            return it
+        }
+        
+        Log.d("MarketRepository", "Using decoded path: $decodedPath")
         try {
-            val cleanPath = if (productPath.contains("?path=")) {
-                productPath.substringAfter("?path=")
-            } else {
-                productPath
-            }
-            
-            val decodedPath = java.net.URLDecoder.decode(cleanPath, "UTF-8")
-            
-            Log.d("MarketRepository", "Using decoded path: $decodedPath")
-            
             val response = requireNotNull(apiService) { "API service is not initialized" }.getProductDetails(decodedPath)
             Log.d("MarketRepository", "Product details loaded successfully: ${response.product.name}")
+            
+            // Sonucu önbelleğe al
+            detailsCache[decodedPath] = response
+            
             return response
         } catch (e: Exception) {
             Log.e("MarketRepository", "Error getting product details", e)
             Log.e("MarketRepository", "Error message: ${e.message}")
             throw e
         }
+    }
+    
+    // Önbellekleri temizle
+    fun clearCaches() {
+        searchCache.clear()
+        detailsCache.clear()
     }
 }

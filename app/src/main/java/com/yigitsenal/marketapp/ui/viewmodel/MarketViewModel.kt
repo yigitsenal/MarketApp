@@ -66,18 +66,19 @@ class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
     private val pricePredictionService = PricePredictionApiService.create()
 
     init {
-        loadItems()
+        observeSearchText()
     }
 
     private fun observeSearchText() {
         viewModelScope.launch {
             _newItemText
-                .debounce(300)
+                .debounce(300) // Kullanıcı yazarken her harf için arama yapmayı engelle
                 .collect { query ->
-                    if (query.isNotEmpty()) {
+                    if (query.isNotEmpty() && query.length > 2) { // En az 3 karakter olmalı
                         searchProducts(query)
-                    } else {
-                        loadItems()
+                    } else if (query.isEmpty()) {
+                        _products.value = emptyList()
+                        _uiState.value = MarketUiState.Success(emptyList())
                     }
                 }
         }
@@ -95,12 +96,19 @@ class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
 
     fun updateNewItemText(text: String) {
         _newItemText.value = text
-        searchProducts(text)
     }
 
     fun searchProducts(query: String, isNewSearch: Boolean = true) {
         // Önceki aramayı iptal et
         searchJob?.cancel()
+        
+        // Çok kısa sorgular için arama yapma
+        if (query.trim().length < 3) {
+            if (isNewSearch) {
+                _uiState.value = MarketUiState.Success(emptyList())
+            }
+            return
+        }
         
         // Yeni arama ise sayfayı sıfırla
         if (isNewSearch) {
@@ -112,12 +120,6 @@ class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
         
         // Eğer son sayfaya ulaşıldıysa veya yükleme devam ediyorsa yeni sorgu yapma
         if (isLastPage || isLoading) return
-        
-        // Boş sorgu kontrolü
-        if (query.trim().isEmpty()) {
-            _uiState.value = MarketUiState.Success(emptyList())
-            return
-        }
 
         searchJob = viewModelScope.launch {
             try {
@@ -143,6 +145,7 @@ class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
                         } else {
                             _products.value + newProducts
                         }
+                        
                         _products.value = updatedProducts
                         _uiState.value = MarketUiState.Success(updatedProducts)
                         Log.d("MarketViewModel", "Ürünler güncellendi. Toplam: ${updatedProducts.size}")
@@ -176,9 +179,11 @@ class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
     fun updateSortOption(sort: String?) {
         _sortOption.value = sort
         if (_newItemText.value.isNotEmpty()) {
+            // Sıralama değiştiğinde mevcut aramanın ilk sayfasından başla
+            currentPage = 1
+            isLastPage = false
+            _products.value = emptyList()
             searchProducts(_newItemText.value)
-        } else {
-            loadItems()
         }
     }
 
@@ -275,17 +280,19 @@ class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
                     priceHistory = historyEntries
                 )
                 
-                // API'yi çağır
+                // API'yi çağır (API anahtarını ekleyelim)
                 val response = pricePredictionService.predictPrice(
                     request = request,
-                    apiKey = PricePredictionApiService.API_KEY // API anahtarını query parametresi olarak gönder
+                    apiKey = PricePredictionApiService.API_KEY
                 )
                 
-                // Yanıtı işle
-                val responseText = response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
-                
-                if (responseText != null) {
-                    // Yanıttan tahmin değerlerini çıkar
+                // Yanıtı işle - PredictionResponse formatında döndüğü için uygun şekilde işleyelim
+                val candidate = response.candidates?.firstOrNull()
+                if (candidate != null && candidate.content != null) {
+                    // İlk part'ın text'ini alalım - Gemini API yanıt metni
+                    val responseText = candidate.content.parts?.firstOrNull()?.text ?: ""
+                    
+                    // Yanıt metnini ayrıştırıp fiyat tahminlerini çıkaralım
                     val result = parseAIResponse(responseText)
                     _pricePrediction.value = result
                 } else {
@@ -294,19 +301,21 @@ class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
                         prediction60Days = null,
                         prediction90Days = null,
                         analysis = null,
-                        errorMessage = "Fiyat tahmini alınamadı: AI yanıtı boş."
+                        errorMessage = "Fiyat tahmini başarısız oldu: Geçerli bir yanıt alınamadı."
                     )
                 }
                 
             } catch (e: Exception) {
                 Log.e("MarketViewModel", "Error predicting price", e)
+                
                 val errorMessage = when {
+                    e.message?.contains("timeout") == true -> "Sunucu yanıt vermiyor. Lütfen daha sonra tekrar deneyin."
                     e.message?.contains("403") == true -> "Gemini API erişim hatası: API anahtarı geçersiz veya sınırlamalar aşıldı."
-                    e.message?.contains("404") == true -> "Gemini API erişim hatası: İstek yapılan endpoit bulunamadı."
+                    e.message?.contains("404") == true -> "Gemini API erişim hatası: İstek yapılan endpoint bulunamadı."
                     e.message?.contains("429") == true -> "Gemini API erişim hatası: Çok fazla istek gönderildi, lütfen daha sonra tekrar deneyin."
                     e.message?.contains("timeout") == true || e.message?.contains("timed out") == true -> "Gemini API zaman aşımına uğradı, lütfen daha sonra tekrar deneyin."
                     e.message?.contains("network") == true || e.message?.contains("connection") == true -> "Ağ bağlantısı hatası, internet bağlantınızı kontrol edin."
-                    else -> "Fiyat tahmini yapılırken hata oluştu: ${e.message}"
+                    else -> "Fiyat tahmininde hata: ${e.message}"
                 }
                 
                 _pricePrediction.value = PricePredictionResult(
@@ -322,12 +331,13 @@ class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
         }
     }
     
+    // AI yanıtını ayrıştırarak fiyat tahminlerini çıkar
     private fun parseAIResponse(responseText: String): PricePredictionResult {
         try {
-            // Regex ile tahmin değerlerini al
-            val pattern30 = Pattern.compile("30 Gün: ([0-9.]+) TL")
-            val pattern60 = Pattern.compile("60 Gün: ([0-9.]+) TL")
-            val pattern90 = Pattern.compile("90 Gün: ([0-9.]+) TL")
+            // Regex ile fiyat tahminlerini çıkar
+            val pattern30 = Pattern.compile("30 gün sonrası tahmini fiyat: ([0-9]+[.,]?[0-9]*) ₺")
+            val pattern60 = Pattern.compile("60 gün sonrası tahmini fiyat: ([0-9]+[.,]?[0-9]*) ₺")
+            val pattern90 = Pattern.compile("90 gün sonrası tahmini fiyat: ([0-9]+[.,]?[0-9]*) ₺")
             
             val matcher30 = pattern30.matcher(responseText)
             val matcher60 = pattern60.matcher(responseText)
@@ -389,6 +399,11 @@ class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
                 merchant_logo = offer.merchant_logo
             )
         }
+    }
+    
+    // Önbelleği temizle
+    fun clearCache() {
+        repository.clearCaches()
     }
 }
 

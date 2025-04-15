@@ -70,6 +70,7 @@ dependencies {
 
     // MPAndroidChart - Grafik çizimi için
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

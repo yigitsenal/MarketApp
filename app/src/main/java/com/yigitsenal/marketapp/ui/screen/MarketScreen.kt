@@ -12,6 +12,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -98,6 +99,13 @@ import com.yigitsenal.marketapp.ui.theme.SecondaryColor
 import com.yigitsenal.marketapp.ui.viewmodel.MarketUiState
 import com.yigitsenal.marketapp.ui.viewmodel.MarketViewModel
 import com.yigitsenal.marketapp.ui.viewmodel.ShoppingListViewModel
+import java.text.DecimalFormat
+
+// formatWithDecimal uzantı fonksiyonunu ekliyorum
+fun Double.formatWithDecimal(): String {
+    val formatter = DecimalFormat("#,##0.00")
+    return formatter.format(this)
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -111,6 +119,11 @@ fun MarketScreen(
     val searchText by viewModel.newItemText.collectAsState()
     val selectedProduct by viewModel.selectedProduct.collectAsState()
     val currentSort by viewModel.sortOption.collectAsState()
+    
+    // Compose'da yan etki - kullanıcı bu ekrana geldiğinde mevcut aramaları ve detayları temizle
+    LaunchedEffect(key1 = Unit) {
+        viewModel.updateNewItemText("")
+    }
 
     // Filtreleme dialog'unu göstermek için state
     var showSortDialog by remember { mutableStateOf(false) }
@@ -119,8 +132,12 @@ fun MarketScreen(
     var showProductDetails by remember { mutableStateOf(false) }
 
     // Eğer seçilen ürün değiştiyse ve null değilse, popup'ı göster
-    if (selectedProduct != null && !showProductDetails) {
-        showProductDetails = true
+    LaunchedEffect(selectedProduct) {
+        if (selectedProduct != null && !showProductDetails) {
+            showProductDetails = true
+        } else if (selectedProduct == null) {
+            showProductDetails = false
+        }
     }
 
     // Sıralama dialog'u
@@ -415,7 +432,7 @@ fun ProductCard(
     shoppingListViewModel: ShoppingListViewModel
 ) {
     // Ürünün kendi satıcı sayısını al
-    val offerCount = product.offer_count ?: 0
+    val offerCount = product.offer_count
     
     // Ürün miktarını takip etmek için state
     val activeListItems by shoppingListViewModel.activeListItems.collectAsState()
@@ -461,168 +478,168 @@ fun ProductCard(
                         .build(),
                     contentDescription = product.name,
                     modifier = Modifier
-                        .size(88.dp)
-                        .align(Alignment.CenterHorizontally),
+                        .height(130.dp)
+                        .fillMaxWidth(),
                     contentScale = ContentScale.Fit
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Mağaza bilgisi ve satıcı sayısı
+                Row(
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    // Mağaza logosu
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(
+                                if (product.merchant_logo.startsWith("/")) {
+                                    "http://10.0.2.2:8000${product.merchant_logo}"
+                                } else {
+                                    "http://10.0.2.2:8000/${product.merchant_logo}"
+                                }
+                            )
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .height(20.dp)
+                            .width(48.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .border(0.5.dp, Color(0xFFEEEEEE), RoundedCornerShape(4.dp)),
+                        contentScale = ContentScale.Fit
+                    )
+                    
+                    // Satıcı sayısı - Görseldeki gibi belirgin şekilde
+                    if (offerCount > 0) {
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "+$offerCount satıcı",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = PrimaryColor,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(PrimaryColor.copy(alpha = 0.1f))
+                                .padding(horizontal = 4.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
 
                 // Ürün adı
                 Text(
                     text = product.name,
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        lineHeight = 20.sp
-                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Medium,
                     maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.height(40.dp)
                 )
 
-                Spacer(modifier = Modifier.height(15.dp))
+                Spacer(modifier = Modifier.weight(1f))
 
-                // Satıcı bilgileri
+                // Fiyat ve sepete ekle
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.Center
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .width(140.dp)
-                            .height(30.dp)
-                            .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(8.dp))
-                            .padding(horizontal = 8.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            // Mağaza logosu
-                            AsyncImage(
-                                model = ImageRequest.Builder(LocalContext.current)
-                                    .data(
-                                        if (product.merchant_logo.startsWith("/")) {
-                                            "http://10.0.2.2:8000${product.merchant_logo}"
-                                        } else {
-                                            "http://10.0.2.2:8000/${product.merchant_logo}"
-                                        }
-                                    )
-                                    .crossfade(true)
-                                    .build(),
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .height(20.dp)
-                                    .width(50.dp),
-                                contentScale = ContentScale.Fit
-                            )
-
-                            // Satıcı sayısı
-                            if (offerCount > 0) {
-                                Text(
-                                    text = "+${offerCount} satıcı",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = Color.Gray
-                                )
-                            }
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(25.dp))
-
-                // Fiyat bilgileri
-                Column {
-                    Text(
-                        text = "${product.price.toInt()},00 TL",
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.ExtraBold
-                        ),
-                        color = PrimaryColor
-                    )
-                    
-                    if (product.unit_price > 0) {
+                    // Fiyat
+                    Column {
                         Text(
-                            text = "${String.format("%.2f", product.unit_price)} TL/${product.unit}",
+                            text = "${product.price.formatWithDecimal()} TL",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = PrimaryColor
+                        )
+                        Text(
+                            text = if (product.unit.isNotEmpty()) "${product.unit_price.formatWithDecimal()} TL/${product.unit}" else "",
                             style = MaterialTheme.typography.bodySmall,
                             color = Color.Gray
                         )
                     }
+
+                    // Sepete ekle button veya miktar göstergesi
+                    if (quantity > 0) {
+                        // Eğer üründen sepette varsa miktar göster
+                        QuantityControl(quantity, product, shoppingListViewModel)
+                    } else {
+                        // Sepette yoksa ekleme butonu göster
+                        IconButton(
+                            onClick = { onAddToCart(product) },
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    PrimaryColor,
+                                    shape = CircleShape
+                                )
+                        ) {
+                            Icon(
+                                Icons.Default.Add,
+                                contentDescription = "Sepete Ekle",
+                                tint = Color.White
+                            )
+                        }
+                    }
                 }
             }
+        }
+    }
+}
 
-            // Sepete ekle butonu veya miktar kontrolleri - sağ üst köşede
-            Box(
+@Composable
+fun QuantityControl(
+    quantity: Int,
+    product: MarketItem,
+    shoppingListViewModel: ShoppingListViewModel,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(18.dp))
+            .background(PrimaryColor)
+            .padding(horizontal = 8.dp, vertical = 4.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .width(IntrinsicSize.Min),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            // Eksiltme butonu
+            Icon(
+                Icons.Default.Delete,
+                contentDescription = if (quantity == 1) "Sil" else "Azalt",
+                tint = Color.White,
                 modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(8.dp)
-
-            ) {
-                if (quantity == 0) {
-                    // Sepete ekle butonu
-                    Box(
-                        modifier = Modifier
-                            .size(24.dp)
-                            .clip(CircleShape)
-                            .background(PrimaryColor)
-                            .clickable {
-                                onAddToCart(product)
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            Icons.Default.Add,
-                            contentDescription = "Sepete Ekle",
-                            tint = Color.White,
-                            modifier = Modifier.size(16.dp)
-                        )
+                    .size(20.dp)
+                    .clickable {
+                        shoppingListViewModel.decreaseItemQuantity(product)
                     }
-                } else {
-                    // Miktar kontrol butonları
-                    Row(
-                        modifier = Modifier
-                            .height(48.dp)
-                            .clip(RoundedCornerShape(24.dp))
-                            .background(PrimaryColor)
-                            .padding(horizontal = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        // Silme/azaltma butonu
-                        Icon(
-                            if (quantity == 1) Icons.Default.Close else Icons.Default.Delete,
-                            contentDescription = if (quantity == 1) "Sil" else "Azalt",
-                            tint = Color.White,
-                            modifier = Modifier
-                                .size(20.dp)
-                                .clickable {
-                                    shoppingListViewModel.decreaseItemQuantity(product)
-                                }
-                        )
-                        
-                        // Miktar
-                        Text(
-                            text = quantity.toString(),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
-                        
-                        // Artırma butonu
-                        Icon(
-                            Icons.Default.Add,
-                            contentDescription = "Artır",
-                            tint = Color.White,
-                            modifier = Modifier
-                                .size(20.dp)
-                                .clickable {
-                                    shoppingListViewModel.increaseItemQuantity(product)
-                                }
-                        )
+            )
+            
+            // Miktar
+            Text(
+                text = quantity.toString(),
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color.White,
+                fontWeight = FontWeight.Bold
+            )
+            
+            // Artırma butonu
+            Icon(
+                Icons.Default.Add,
+                contentDescription = "Artır",
+                tint = Color.White,
+                modifier = Modifier
+                    .size(20.dp)
+                    .clickable {
+                        shoppingListViewModel.increaseItemQuantity(product)
                     }
-                }
-            }
+            )
         }
     }
 }
