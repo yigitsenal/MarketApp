@@ -40,6 +40,12 @@ fun PriceHistoryChart(
     
     // Filtrele ve sırala
     val filteredPriceHistory = remember(priceHistory, timeRange) {
+        // Veri yoksa boş liste döndür
+        if (priceHistory.isEmpty()) {
+            println("DEBUG: Orijinal veri boş, filtreleme yapılmadı")
+            return@remember emptyList()
+        }
+        
         when (timeRange) {
             TimeRange.WEEK -> {
                 // Haftalık görünüm için son 7 günü al
@@ -70,6 +76,11 @@ fun PriceHistoryChart(
         }
         labels
     }
+    
+    // Etiket sayısını kontrol et
+    if (dateLabels.isEmpty()) {
+        println("UYARI: Hiç etiket yok, grafik çizilemeyecek")
+    }
 
     AndroidView(
         modifier = modifier
@@ -99,13 +110,27 @@ fun PriceHistoryChart(
                         xAxis.labelCount = 7 // Haftalık görünümde her gün için etiket
                         xAxis.setLabelCount(7, true) // Tam olarak 7 etiket göster
                     }
-                    TimeRange.MONTH -> xAxis.labelCount = minOf(dateLabels.size, 10) // Aylık görünümde 10 etiket
-                    TimeRange.YEAR -> xAxis.labelCount = minOf(dateLabels.size, 12) // Yıllık görünümde 12 etiket
+                    TimeRange.MONTH -> {
+                        // Aylık görünümde etiketlerin üst üste binmesini önlemek için daha az etiket göster
+                        val labelCount = minOf(dateLabels.size, 6) // Aylık görünümde 6 etiket (daha az etiket, daha az çakışma)
+                        xAxis.labelCount = labelCount
+                        xAxis.setLabelCount(labelCount, true)
+                    }
+                    TimeRange.YEAR -> {
+                        val labelCount = minOf(dateLabels.size, 6) // Yıllık görünümde 6 etiket
+                        xAxis.labelCount = labelCount
+                        xAxis.setLabelCount(labelCount, true)
+                    }
                 }
+                
+                // Etiketlerin daha iyi görünmesi için ek ayarlar
+                xAxis.textSize = 8f // Daha küçük yazı boyutu
+                xAxis.yOffset = 10f // Etiketleri biraz aşağı kaydır
                 
                 // Y ekseni ayarları
                 axisLeft.setDrawGridLines(true)
-                axisLeft.axisMinimum = 0f
+                // Y ekseni minimum değerini dinamik olarak ayarla (0 yerine)
+                // Grafik daha anlamlı bir aralıkta gösterilecek
                 axisRight.isEnabled = false
                 
                 legend.isEnabled = true
@@ -120,6 +145,21 @@ fun PriceHistoryChart(
             val entries = filteredPriceHistory.mapIndexed { index, pricePoint ->
                 Entry(index.toFloat(), pricePoint.price.toFloat())
             }
+            
+            // Veri setindeki minimum fiyatı bul
+            val minPrice = if (entries.isNotEmpty()) {
+                val minY = entries.minByOrNull { it.y }?.y ?: 0f
+                // Minimum fiyattan biraz daha düşük bir değer kullan (grafiğin alt kısmında boşluk bırakmak için)
+                // Minimum fiyatın %15 altı veya en az 10 birim altı
+                val offset = minOf(minY * 0.15f, 10f)
+                maxOf(minY - offset, 0f) // Negatif olmamasını sağla
+            } else {
+                0f
+            }
+            
+            // Y ekseni minimum değerini ayarla
+            chart.axisLeft.axisMinimum = minPrice
+            println("DEBUG: Y ekseni minimum değeri: $minPrice")
 
             println("DEBUG: Entry sayısı: ${entries.size}")
             entries.forEachIndexed { index, entry -> 
@@ -146,8 +186,10 @@ fun PriceHistoryChart(
                             TimeRange.WEEK -> "₺${value.toInt()}" // Haftalık görünümde tüm değerleri göster
                             else -> {
                                 // Diğer görünümlerde seçici olarak göster
-                                if (entries.size > 10 && entries.indexOf(Entry(entries.indexOf(Entry(0f, value)).toFloat(), value)) % 2 != 0) {
-                                    ""
+                                // Veri noktası sayısına göre etiketleri azalt
+                                if (entries.size > 10) {
+                                    val index = entries.indexOfFirst { it.y == value }
+                                    if (index % 3 != 0) "" else "₺${value.toInt()}"
                                 } else {
                                     "₺${value.toInt()}"
                                 }
@@ -175,9 +217,12 @@ private fun filterPriceHistoryByTimeRange(
 ): List<PriceHistory> {
     if (priceHistory.isEmpty()) return emptyList()
     
-    // Bugünün tarihini manuel olarak ayarla (17 Mart 2025)
+    // Bugünün tarihini al (manuel tarih yerine gerçek tarihi kullan)
     val currentCalendar = Calendar.getInstance()
-    currentCalendar.set(2025, Calendar.MARCH, 17, 23, 59, 59)
+    // Gün sonuna ayarla
+    currentCalendar.set(Calendar.HOUR_OF_DAY, 23)
+    currentCalendar.set(Calendar.MINUTE, 59)
+    currentCalendar.set(Calendar.SECOND, 59)
     currentCalendar.set(Calendar.MILLISECOND, 999)
     val today = currentCalendar.time
     
@@ -224,6 +269,8 @@ private fun filterPriceHistoryByTimeRange(
         val tempCalendar = Calendar.getInstance()
         tempCalendar.time = startDate
         
+        println("DEBUG: Haftalık görünüm başlangıç tarihi: ${dateFormat.format(startDate)}")
+        
         for (i in 0 until 7) {
             val dateStr = dateFormat.format(tempCalendar.time)
             dates.add(dateStr)
@@ -235,29 +282,41 @@ private fun filterPriceHistoryByTimeRange(
         dates.forEach { date ->
             val pricesForDate = priceHistory.filter { it.date == date }
             if (pricesForDate.isNotEmpty()) {
+                // O gün için birden fazla veri varsa en son kaydedileni al
                 resultMap[date] = pricesForDate.maxByOrNull { it.date } ?: pricesForDate.first()
                 println("DEBUG: Tarih için veri bulundu: $date")
             } else {
                 println("DEBUG: Tarih için veri bulunamadı: $date")
-                // Eğer o gün için veri yoksa, en yakın önceki günün verisini bul
-                val closestPreviousPrice = priceHistory
-                    .filter { dateFormat.parse(it.date)?.before(dateFormat.parse(date)) ?: false }
-                    .maxByOrNull { it.date }
-                
-                if (closestPreviousPrice != null) {
-                    // Aynı fiyatı kullan ama tarihi güncelle
-                    resultMap[date] = PriceHistory(date, closestPreviousPrice.price)
-                    println("DEBUG: Önceki tarihten veri kullanıldı: ${closestPreviousPrice.date} -> $date")
-                } else {
-                    // Önceki tarih yoksa, sonraki en yakın tarihi bul
-                    val closestNextPrice = priceHistory
-                        .filter { dateFormat.parse(it.date)?.after(dateFormat.parse(date)) ?: false }
-                        .minByOrNull { it.date }
+                try {
+                    val dateObj = dateFormat.parse(date)
+                    // Eğer o gün için veri yoksa, en yakın önceki günün verisini bul
+                    val closestPreviousPrice = priceHistory
+                        .filter { priceDate -> 
+                            val pDate = dateFormat.parse(priceDate.date)
+                            pDate != null && pDate.before(dateObj)
+                        }
+                        .maxByOrNull { it.date }
                     
-                    if (closestNextPrice != null) {
-                        resultMap[date] = PriceHistory(date, closestNextPrice.price)
-                        println("DEBUG: Sonraki tarihten veri kullanıldı: ${closestNextPrice.date} -> $date")
+                    if (closestPreviousPrice != null) {
+                        // Aynı fiyatı kullan ama tarihi güncelle
+                        resultMap[date] = PriceHistory(date, closestPreviousPrice.price)
+                        println("DEBUG: Önceki tarihten veri kullanıldı: ${closestPreviousPrice.date} -> $date")
+                    } else {
+                        // Önceki tarih yoksa, sonraki en yakın tarihi bul
+                        val closestNextPrice = priceHistory
+                            .filter { priceDate -> 
+                                val pDate = dateFormat.parse(priceDate.date)
+                                pDate != null && pDate.after(dateObj)
+                            }
+                            .minByOrNull { it.date }
+                        
+                        if (closestNextPrice != null) {
+                            resultMap[date] = PriceHistory(date, closestNextPrice.price)
+                            println("DEBUG: Sonraki tarihten veri kullanıldı: ${closestNextPrice.date} -> $date")
+                        }
                     }
+                } catch (e: Exception) {
+                    println("DEBUG: Tarih işleme hatası: ${e.message}")
                 }
             }
         }
@@ -279,7 +338,7 @@ private fun filterPriceHistoryByTimeRange(
     }
     
     // Aylık ve yıllık görünümler için veri noktası sayısını sınırla
-    return when (timeRange) {
+    val result = when (timeRange) {
         TimeRange.MONTH -> {
             // Aylık görünüm için yaklaşık 30 veri noktası
             if (filtered.size > 30) {
@@ -300,12 +359,20 @@ private fun filterPriceHistoryByTimeRange(
         }
         else -> filtered
     }.sortedBy { it.date }
+    
+    println("DEBUG: Son filtreleme sonrası veri sayısı: ${result.size}")
+    return result
 }
 
 // X ekseni için tarih formatı
 private fun formatDateForXAxis(dateString: String, timeRange: TimeRange): String {
     val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-    val date = inputFormat.parse(dateString) ?: return ""
+    val date = try {
+        inputFormat.parse(dateString)
+    } catch (e: Exception) {
+        println("DEBUG: Tarih ayrıştırma hatası: $dateString - ${e.message}")
+        null
+    } ?: return ""
     
     println("DEBUG: formatDateForXAxis - Tarih: $dateString")
     

@@ -21,7 +21,7 @@ interface PricePredictionApiService {
     companion object {
         private const val BASE_URL = "https://generativelanguage.googleapis.com/"
         // API anahtarı
-        const val API_KEY = "AIzaSyAZLTdydqZPNQR8AYAiJ7SPjGKj5LsHfKE" // Gerçek kullanımda uygulamaya ait bir API anahtarı kullanılmalıdır
+        const val API_KEY = "AIzaSyAZLTdydqZPNQR8AYAiJ7SPjGKj5LsHfKE"
 
         fun create(): PricePredictionApiService {
             val retrofit = Retrofit.Builder()
