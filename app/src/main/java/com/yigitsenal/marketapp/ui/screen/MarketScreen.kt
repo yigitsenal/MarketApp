@@ -159,7 +159,7 @@ fun MarketScreen(
                     .shadow(elevation = 8.dp, shape = RoundedCornerShape(16.dp)),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = Color.White
+                    containerColor = MaterialTheme.colorScheme.surface
                 ),
                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
             ) {
@@ -185,12 +185,12 @@ fun MarketScreen(
                             onClick = { showSortDialog = false },
                             modifier = Modifier
                                 .size(32.dp)
-                                .background(Color(0xFFF0F0F0), CircleShape)
+                                .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Close,
                                 contentDescription = "Kapat",
-                                tint = Color.Gray,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -198,14 +198,14 @@ fun MarketScreen(
                     
                     Divider(
                         modifier = Modifier.padding(vertical = 4.dp),
-                        color = Color(0xFFEEEEEE)
+                        color = MaterialTheme.colorScheme.outline
                     )
                     
                     Text(
                         text = "Ürünleri Sırala",
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Medium,
-                        color = Color.Gray
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     
                     // Filtre seçenekleri - Modern tasarım
@@ -215,11 +215,11 @@ fun MarketScreen(
                             .clip(RoundedCornerShape(12.dp))
                             .border(
                                 width = 1.dp,
-                                color = Color(0xFFF0F0F0),
+                                color = MaterialTheme.colorScheme.outline,
                                 shape = RoundedCornerShape(12.dp)
                             ),
                         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White)
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                     ) {
                         Column(
                             modifier = Modifier.fillMaxWidth()
@@ -382,15 +382,14 @@ fun MarketScreen(
                         value = searchText,
                         onValueChange = { viewModel.updateNewItemText(it) },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("Ürün Arayın", color = Color.Gray) },
+                        placeholder = { Text("Ürün Arayın", color = MaterialTheme.colorScheme.onSurfaceVariant) },
                         leadingIcon = {
                             Icon(
                                 Icons.Default.Search,
                                 contentDescription = "Ara",
-                                tint = Color.Gray
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         },
-
                         shape = RoundedCornerShape(30.dp),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(
@@ -402,8 +401,10 @@ fun MarketScreen(
                         colors = TextFieldDefaults.colors(
                             focusedIndicatorColor = Color.Transparent,
                             unfocusedIndicatorColor = Color.Transparent,
-                            focusedContainerColor = Color(0xFFF0F0F0),
-                            unfocusedContainerColor = Color(0xFFF0F0F0)
+                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                            unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                         )
                     )
 
@@ -439,8 +440,8 @@ fun MarketScreen(
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
-                                .background(Color.White)
-                                .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(8.dp))
+                                .background(MaterialTheme.colorScheme.surface)
+                                .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(8.dp))
                                 .clickable { showSortDialog = true }
                                 .padding(horizontal = 12.dp, vertical = 8.dp)
                         ) {
@@ -451,13 +452,14 @@ fun MarketScreen(
                                 Text(
                                     text = "Filtrele",
                                     style = MaterialTheme.typography.bodyMedium,
-                                    fontWeight = FontWeight.Medium
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                                 Icon(
                                     Icons.Default.KeyboardArrowDown,
                                     contentDescription = "Filtrele",
                                     modifier = Modifier.size(18.dp),
-                                    tint = Color.Black
+                                    tint = MaterialTheme.colorScheme.onSurface
                                 )
                             }
                         }
@@ -580,7 +582,7 @@ fun ProductCard(
             .height(278.dp),
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color.White
+            containerColor = MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 4.dp,
@@ -639,6 +641,7 @@ fun ProductCard(
                             .height(20.dp)
                             .width(48.dp)
                             .clip(RoundedCornerShape(4.dp))
+                            .background(Color.White)
                             .border(0.5.dp, Color(0xFFEEEEEE), RoundedCornerShape(4.dp)),
                         contentScale = ContentScale.Fit
                     )
@@ -668,7 +671,8 @@ fun ProductCard(
                     fontWeight = FontWeight.Medium,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.height(40.dp)
+                    modifier = Modifier.height(40.dp),
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Spacer(modifier = Modifier.weight(1f))
@@ -733,7 +737,7 @@ fun QuantityControl(
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(18.dp))
-            .background(PrimaryColor)
+            .background(MaterialTheme.colorScheme.primary)
             .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         Row(
@@ -813,7 +817,7 @@ fun ProductDetailDialog(
                 .padding(8.dp)
                 .shadow(elevation = 16.dp, shape = RoundedCornerShape(16.dp)),
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
             LazyColumn(
@@ -900,7 +904,7 @@ fun ProductDetailDialog(
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp)),
                         colors = CardDefaults.cardColors(
-                            containerColor = Color.White
+                            containerColor = MaterialTheme.colorScheme.surface
                         ),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
@@ -973,7 +977,8 @@ fun ProductDetailDialog(
                             Text(
                                 text = product.name,
                                 style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
 
                             Spacer(modifier = Modifier.height(16.dp))
@@ -1082,7 +1087,7 @@ fun ProductDetailDialog(
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp)),
                         colors = CardDefaults.cardColors(
-                            containerColor = Color.White
+                            containerColor = MaterialTheme.colorScheme.surface
                         ),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
@@ -1154,7 +1159,7 @@ fun ProductDetailDialog(
                             .fillMaxWidth()
                             .clip(RoundedCornerShape(12.dp)),
                         colors = CardDefaults.cardColors(
-                            containerColor = Color.White
+                            containerColor = MaterialTheme.colorScheme.surface
                         ),
                         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
@@ -1254,7 +1259,7 @@ fun ProductDetailDialog(
                                 .fillMaxWidth()
                                 .clip(RoundedCornerShape(12.dp)),
                             colors = CardDefaults.cardColors(
-                                containerColor = Color(0xFFF5F5F5)
+                                containerColor = MaterialTheme.colorScheme.surface
                             ),
                             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                         ) {
@@ -1384,7 +1389,10 @@ fun OfferCard(
             .fillMaxWidth()
             .padding(vertical = 4.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) Color(0xFFE3F2FD) else Color.White
+            containerColor = if (isSelected) 
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) 
+            else 
+                MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {

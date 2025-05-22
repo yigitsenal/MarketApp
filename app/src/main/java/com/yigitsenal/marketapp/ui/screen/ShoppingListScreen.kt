@@ -406,9 +406,9 @@ fun ShoppingListItemRow(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = when {
-                isSelected -> Color(0xFFE3F2FD)
-                item.isCompleted -> Color(0xFFF5F5F5)
-                else -> Color.White
+                isSelected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                item.isCompleted -> MaterialTheme.colorScheme.surfaceVariant
+                else -> MaterialTheme.colorScheme.surface
             }
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -449,7 +449,8 @@ fun ShoppingListItemRow(
                     Text(
                         text = item.name,
                         style = MaterialTheme.typography.bodyLarge,
-                        textDecoration = if (item.isCompleted) TextDecoration.LineThrough else TextDecoration.None
+                        textDecoration = if (item.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     
                     Row(
