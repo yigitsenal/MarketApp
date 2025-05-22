@@ -8,6 +8,7 @@ import com.yigitsenal.marketapp.data.model.MarketItem
 import com.yigitsenal.marketapp.data.model.ShoppingList
 import com.yigitsenal.marketapp.data.model.ShoppingListItem
 import com.yigitsenal.marketapp.data.repository.ShoppingListRepository
+import com.yigitsenal.marketapp.util.Constants
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -124,21 +125,21 @@ class ShoppingListViewModel(
         viewModelScope.launch {
             // Görsel URL'lerini düzenle
             val imageUrl = when {
-                marketItem.image.startsWith("/") -> "http://10.0.2.2:8000${marketItem.image}"
+                marketItem.image.startsWith("/") -> "${Constants.API_BASE_URL}${marketItem.image}"
                 marketItem.image.contains("file=") -> {
                     val filename = marketItem.image.substringAfter("file=").substringBefore("&")
-                    "http://10.0.2.2:8000/image.php?file=${filename}&size=md"
+                    "${Constants.ApiEndpoints.IMAGE}?file=${filename}&size=${Constants.ImageSizes.MEDIUM}"
                 }
-                else -> "http://10.0.2.2:8000/image.php?file=${marketItem.image}&size=md"
+                else -> "${Constants.ApiEndpoints.IMAGE}?file=${marketItem.image}&size=${Constants.ImageSizes.MEDIUM}"
             }
 
             val merchantLogo = when {
-                marketItem.merchant_logo.startsWith("/") -> "http://10.0.2.2:8000${marketItem.merchant_logo}"
+                marketItem.merchant_logo.startsWith("/") -> "${Constants.API_BASE_URL}${marketItem.merchant_logo}"
                 marketItem.merchant_logo.contains("file=") -> {
                     val filename = marketItem.merchant_logo.substringAfter("file=").substringBefore("&")
-                    "http://10.0.2.2:8000/image.php?file=${filename}&size=sm"
+                    "${Constants.ApiEndpoints.IMAGE}?file=${filename}&size=${Constants.ImageSizes.SMALL}"
                 }
-                else -> "http://10.0.2.2:8000/image.php?file=${marketItem.merchant_logo}&size=sm"
+                else -> "${Constants.ApiEndpoints.IMAGE}?file=${marketItem.merchant_logo}&size=${Constants.ImageSizes.SMALL}"
             }
 
             // Aynı ürünün aynı mağazadan olup olmadığını kontrol et

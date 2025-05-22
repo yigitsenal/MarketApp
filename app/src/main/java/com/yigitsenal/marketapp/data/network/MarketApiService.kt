@@ -3,6 +3,7 @@ package com.yigitsenal.marketapp.data.network
 import com.yigitsenal.marketapp.data.model.MarketItem
 import com.yigitsenal.marketapp.data.model.PaginationInfo
 import com.yigitsenal.marketapp.data.model.ProductDetailResponse
+import com.yigitsenal.marketapp.util.Constants
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -37,15 +38,15 @@ interface MarketApiService {
     ): ProductDetailResponse
     
     companion object {
-        const val BASE_URL = "http://192.168.1.20:8000/"
-        const val IMAGE_URL = BASE_URL + "image.php"
+        const val BASE_URL = Constants.API_BASE_URL + "/"
+        const val IMAGE_URL = Constants.ApiEndpoints.IMAGE
 
-        fun getImageUrl(fileName: String, size: String = "md"): String {
+        fun getImageUrl(fileName: String, size: String = Constants.ImageSizes.MEDIUM): String {
             return "${IMAGE_URL}?file=${fileName}&size=${size}"
         }
 
         fun getProductUrl(path: String): String {
-            return "${BASE_URL}product.php?path=$path"
+            return "${Constants.ApiEndpoints.PRODUCT_DETAILS}?path=$path"
         }
     }
 }

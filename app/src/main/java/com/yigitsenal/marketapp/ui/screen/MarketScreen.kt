@@ -99,6 +99,7 @@ import com.yigitsenal.marketapp.ui.theme.SecondaryColor
 import com.yigitsenal.marketapp.ui.viewmodel.MarketUiState
 import com.yigitsenal.marketapp.ui.viewmodel.MarketViewModel
 import com.yigitsenal.marketapp.ui.viewmodel.ShoppingListViewModel
+import com.yigitsenal.marketapp.util.Constants
 import java.text.DecimalFormat
 
 // formatWithDecimal uzantı fonksiyonunu ekliyorum
@@ -598,12 +599,12 @@ fun ProductCard(
                     model = ImageRequest.Builder(LocalContext.current)
                         .data(
                             if (product.image.startsWith("/")) {
-                                "http://10.0.2.2:8000${product.image}"
+                                "${Constants.API_BASE_URL}${product.image}"
                             } else if (product.image.contains("file=")) {
                                 val filename = product.image.substringAfter("file=").substringBefore("&")
-                                "http://10.0.2.2:8000/image.php?file=${filename}&size=md"
+                                "${Constants.ApiEndpoints.IMAGE}?file=${filename}&size=${Constants.ImageSizes.MEDIUM}"
                             } else {
-                                "http://10.0.2.2:8000/image.php?file=${product.image}&size=md"
+                                "${Constants.ApiEndpoints.IMAGE}?file=${product.image}&size=${Constants.ImageSizes.MEDIUM}"
                             }
                         )
                         .crossfade(true)
@@ -626,9 +627,9 @@ fun ProductCard(
                         model = ImageRequest.Builder(LocalContext.current)
                             .data(
                                 if (product.merchant_logo.startsWith("/")) {
-                                    "http://10.0.2.2:8000${product.merchant_logo}"
+                                    "${Constants.API_BASE_URL}${product.merchant_logo}"
                                 } else {
-                                    "http://10.0.2.2:8000/${product.merchant_logo}"
+                                    "${Constants.API_BASE_URL}/${product.merchant_logo}"
                                 }
                             )
                             .crossfade(true)
@@ -870,12 +871,12 @@ fun ProductDetailDialog(
                         contentAlignment = Alignment.Center
                     ) {
                         val imageUrl = if (product.image.startsWith("/")) {
-                            "http://10.0.2.2:8000${product.image}"
+                            "${Constants.API_BASE_URL}${product.image}"
                         } else if (product.image.contains("file=")) {
                             val filename = product.image.substringAfter("file=").substringBefore("&")
-                            "http://10.0.2.2:8000//image.php?file=${filename}&size=lg"
+                            "${Constants.ApiEndpoints.IMAGE}?file=${filename}&size=${Constants.ImageSizes.LARGE}"
                         } else {
-                            "http://10.0.2.2:8000//image.php?file=${product.image}&size=lg"
+                            "${Constants.ApiEndpoints.IMAGE}?file=${product.image}&size=${Constants.ImageSizes.LARGE}"
                         }
 
                         AsyncImage(
@@ -931,9 +932,9 @@ fun ProductDetailDialog(
                                 // Mağaza logosu (marka ve miktar arasında)
                                 if (product.merchant_logo.isNotEmpty()) {
                                     val logoUrl = if (product.merchant_logo.startsWith("/")) {
-                                        "http://10.0.2.2:8000${product.merchant_logo}"
+                                        "${Constants.API_BASE_URL}${product.merchant_logo}"
                                     } else {
-                                        "http://10.0.2.2:8000/${product.merchant_logo}"
+                                        "${Constants.API_BASE_URL}/${product.merchant_logo}"
                                     }
                                     
                                     AsyncImage(
@@ -1405,9 +1406,9 @@ fun OfferCard(
                     model = ImageRequest.Builder(LocalContext.current)
                         .data(
                             if (offer.merchant_logo.startsWith("/")) {
-                                "http://10.0.2.2:8000${offer.merchant_logo}"
+                                "${Constants.API_BASE_URL}${offer.merchant_logo}"
                             } else {
-                                "http://10.0.2.2:8000/image.php?file=${offer.merchant_logo}&size=sm"
+                                "${Constants.API_BASE_URL}/${offer.merchant_logo}"
                             }
                         )
                         .crossfade(true)

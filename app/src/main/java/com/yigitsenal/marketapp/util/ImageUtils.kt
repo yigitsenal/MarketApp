@@ -4,14 +4,12 @@ import android.content.Context
 import android.util.Log
 import coil.request.CachePolicy
 import coil.request.ImageRequest
-import com.yigitsenal.marketapp.data.network.MarketApiService
-import okhttp3.HttpUrl.Companion.toHttpUrl
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
 object ImageUtils {
     
-    fun createImageRequest(context: Context, imageName: String, size: String = "md"): ImageRequest {
+    fun createImageRequest(context: Context, imageName: String, size: String = Constants.ImageSizes.MEDIUM): ImageRequest {
         // Extract just the filename from the image field if it contains a URL-like structure
         val actualFileName = extractFilename(imageName)
         Log.d("ImageUtils", "Original image name: $imageName")
@@ -21,7 +19,7 @@ object ImageUtils {
         val encodedImageName = URLEncoder.encode(actualFileName, StandardCharsets.UTF_8.toString())
         
         // Create the URL with the proper format
-        val imageUrl = "http://10.0.2.2:8000/image.php?file=$encodedImageName&size=$size"
+        val imageUrl = "${Constants.ApiEndpoints.IMAGE}?file=$encodedImageName&size=$size"
         
         Log.d("ImageUtils", "Loading image from URL: $imageUrl")
         
