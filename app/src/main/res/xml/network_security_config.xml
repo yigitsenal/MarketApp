@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
-    <debug-overrides>
+    <debug-overrides cleartextTrafficPermitted="true">
         <trust-anchors>
             <certificates src="system" />
             <certificates src="user" />
@@ -13,7 +13,14 @@
         </trust-anchors>
     </base-config>
     <domain-config cleartextTrafficPermitted="true">
-        <domain includeSubdomains="true">10.0.2.2</domain>
+        <domain includeSubdomains="true">10.0.2.2</domain> <!-- Emulator localhost -->
         <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">192.168.1.19</domain>
+        <!-- 
+            Eğer resimler geliştirme bilgisayarınızdaki yerel bir sunucudan (HTTP üzerinden) geliyorsa,
+            bilgisayarınızın yerel ağdaki IP adresini buraya eklemeniz gerekebilir.
+            Örneğin: <domain includeSubdomains="true">192.168.1.100</domain>
+            Bu IP adresini resim URL'lerinizde de kullanmayı unutmayın.
+        -->
     </domain-config>
 </network-security-config>

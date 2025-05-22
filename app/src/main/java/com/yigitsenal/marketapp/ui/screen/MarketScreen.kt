@@ -140,75 +140,215 @@ fun MarketScreen(
         }
     }
 
-    // Sıralama dialog'u
+    // Sıralama dialog'u - Modern tasarım
     if (showSortDialog) {
-        AlertDialog(
+        Dialog(
             onDismissRequest = { showSortDialog = false },
-            title = {
-                Text(
-                    text = "Sıralama",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            text = {
+            properties = DialogProperties(
+                usePlatformDefaultWidth = false,
+                dismissOnBackPress = true,
+                dismissOnClickOutside = true
+            )
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth(0.92f)
+                    .padding(16.dp)
+                    .animateContentSize()
+                    .shadow(elevation = 8.dp, shape = RoundedCornerShape(16.dp)),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.White
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            ) {
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    modifier = Modifier
+                        .padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    FilterChip(
-                        selected = currentSort == "price-asc",
-                        onClick = {
-                            viewModel.updateSortOption("price-asc")
-                            showSortDialog = false
-                        },
-                        label = { Text("En Düşük Fiyat") },
-                        leadingIcon = if (currentSort == "price-asc") {
-                            {
-                                Icon(
-                                    Icons.Default.KeyboardArrowDown,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
-                        } else null
-                    )
-
-                    FilterChip(
-                        selected = currentSort == "specUnit-asc",
-                        onClick = {
-                            viewModel.updateSortOption("specUnit-asc")
-                            showSortDialog = false
-                        },
-                        label = { Text("En Düşük Birim Fiyat") },
-                        leadingIcon = if (currentSort == "specUnit-asc") {
-                            {
-                                Icon(
-                                    Icons.Default.KeyboardArrowDown,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
-                        } else null
-                    )
-
-                    if (currentSort != null) {
-                        FilterChip(
-                            selected = false,
-                            onClick = {
-                                viewModel.updateSortOption(null)
-                                showSortDialog = false
-                            },
-                            label = { Text("Sıralamayı Kaldır") }
+                    // Başlık ve kapatma butonu
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Filtreleme Seçenekleri",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
+                        
+                        IconButton(
+                            onClick = { showSortDialog = false },
+                            modifier = Modifier
+                                .size(32.dp)
+                                .background(Color(0xFFF0F0F0), CircleShape)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Kapat",
+                                tint = Color.Gray,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                    
+                    Divider(
+                        modifier = Modifier.padding(vertical = 4.dp),
+                        color = Color(0xFFEEEEEE)
+                    )
+                    
+                    Text(
+                        text = "Ürünleri Sırala",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.Gray
+                    )
+                    
+                    // Filtre seçenekleri - Modern tasarım
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .border(
+                                width = 1.dp,
+                                color = Color(0xFFF0F0F0),
+                                shape = RoundedCornerShape(12.dp)
+                            ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White)
+                    ) {
+                        Column(
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            // En Düşük Fiyat seçeneği
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        viewModel.updateSortOption("price-asc")
+                                        showSortDialog = false
+                                    }
+                                    .background(
+                                        if (currentSort == "price-asc") {
+                                            PrimaryColor.copy(alpha = 0.08f)
+                                        } else {
+                                            Color.White
+                                        }
+                                    )
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "En Düşük Fiyat",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = if (currentSort == "price-asc") FontWeight.Bold else FontWeight.Normal,
+                                    color = if (currentSort == "price-asc") PrimaryColor else MaterialTheme.colorScheme.onSurface
+                                )
+                                
+                                if (currentSort == "price-asc") {
+                                    Icon(
+                                        Icons.Default.KeyboardArrowDown,
+                                        contentDescription = null,
+                                        tint = PrimaryColor,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                            
+                            Divider(color = Color(0xFFF0F0F0))
+                            
+                            // En Düşük Birim Fiyat seçeneği
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        viewModel.updateSortOption("specUnit-asc")
+                                        showSortDialog = false
+                                    }
+                                    .background(
+                                        if (currentSort == "specUnit-asc") {
+                                            PrimaryColor.copy(alpha = 0.08f)
+                                        } else {
+                                            Color.White
+                                        }
+                                    )
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Text(
+                                    text = "En Düşük Birim Fiyat",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = if (currentSort == "specUnit-asc") FontWeight.Bold else FontWeight.Normal,
+                                    color = if (currentSort == "specUnit-asc") PrimaryColor else MaterialTheme.colorScheme.onSurface
+                                )
+                                
+                                if (currentSort == "specUnit-asc") {
+                                    Icon(
+                                        Icons.Default.KeyboardArrowDown,
+                                        contentDescription = null,
+                                        tint = PrimaryColor,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
+                            
+                            // Eğer aktif bir sıralama varsa Sıralamayı Kaldır seçeneği göster
+                            if (currentSort != null) {
+                                Divider(color = Color(0xFFF0F0F0))
+                                
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            viewModel.updateSortOption(null)
+                                            showSortDialog = false
+                                        }
+                                        .padding(16.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "Sıralamayı Kaldır",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = Color.Gray
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    // Kapat butonu
+                    Box(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        ElevatedButton(
+                            onClick = { showSortDialog = false },
+                            colors = ButtonDefaults.elevatedButtonColors(
+                                containerColor = PrimaryColor
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(50.dp)
+                        ) {
+                            Text(
+                                text = "Kapat",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
                     }
                 }
-            },
-            confirmButton = {
-                TextButton(onClick = { showSortDialog = false }) {
-                    Text("Kapat")
-                }
             }
-        )
+        }
     }
 
     // Popup dialog'u gösteriyoruz
@@ -241,7 +381,7 @@ fun MarketScreen(
                         value = searchText,
                         onValueChange = { viewModel.updateNewItemText(it) },
                         modifier = Modifier.fillMaxWidth(),
-                        placeholder = { Text("şeker") },
+                        placeholder = { Text("Ürün Arayın", color = Color.Gray) },
                         leadingIcon = {
                             Icon(
                                 Icons.Default.Search,
@@ -249,15 +389,7 @@ fun MarketScreen(
                                 tint = Color.Gray
                             )
                         },
-                        trailingIcon = {
-                            IconButton(onClick = { }) {
-                                Icon(
-                                    imageVector = Icons.Default.List,
-                                    contentDescription = "Konum",
-                                    tint = Color.Gray
-                                )
-                            }
-                        },
+
                         shape = RoundedCornerShape(30.dp),
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(
@@ -285,7 +417,7 @@ fun MarketScreen(
                         Column {
                            if (searchText.isNotEmpty()) {
                                 Text(
-                                    text = "${searchText} Fiyatları",
+                                    text = "${searchText} arama sonuçları",
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Bold
                                 )
