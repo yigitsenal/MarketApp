@@ -93,7 +93,7 @@ class MainActivity : ComponentActivity(), ImageLoaderFactory {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // ViewModelFactory'leri oluştur
+
         val appContainer = (application as MarketApplication).container
         marketViewModelFactory = appContainer.marketViewModelFactory
         shoppingListViewModelFactory = appContainer.shoppingListViewModelFactory
@@ -218,7 +218,7 @@ fun MainScreen(
                             verticalArrangement = Arrangement.Center,
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            // Modern boş durum tasarımı
+
                             Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -307,9 +307,9 @@ fun MainScreen(
                                         fontWeight = FontWeight.Bold,
                                         color = MaterialTheme.colorScheme.onBackground
                                     )
-                                    
+
                                     Spacer(modifier = Modifier.height(16.dp))
-                                    
+
                                     // Özet kartı
                                     Card(
                                         modifier = Modifier.fillMaxWidth(),
@@ -338,7 +338,7 @@ fun MainScreen(
                                                     color = MaterialTheme.colorScheme.onPrimaryContainer
                                                 )
                                             }
-                                            
+
                                             Icon(
                                                 imageVector = Icons.Outlined.CheckCircle,
                                                 contentDescription = null,
@@ -389,9 +389,9 @@ fun MainScreen(
                                                 modifier = Modifier.size(24.dp)
                                             )
                                         }
-                                        
+
                                         Spacer(modifier = Modifier.width(16.dp))
-                                        
+
                                         // Liste detayları
                                         Column(
                                             modifier = Modifier.weight(1f)
@@ -408,8 +408,8 @@ fun MainScreen(
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                         }
-                                        
-                                        // Ok ikonu
+
+
                                         Icon(
                                             imageVector = Icons.Default.KeyboardArrowDown,
                                             contentDescription = "Detayları Göster",
@@ -424,7 +424,7 @@ fun MainScreen(
                         }
                     }
 
-                    // Completed List Dialog
+
                     if (showCompletedListDialog && selectedCompletedList != null) {
                         CompletedListDialog(
                             list = selectedCompletedList!!,
@@ -477,26 +477,26 @@ fun CompletedListDialog(
             modifier = Modifier
                 .fillMaxWidth(0.9f)
                 .padding(16.dp),
-            shape = RoundedCornerShape(28.dp), // Increased rounding for M3
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface) // M3 surface color
+            shape = RoundedCornerShape(28.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(24.dp) // Increased padding for M3
+                    .padding(24.dp)
             ) {
                 // Header
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 16.dp), // Increased padding
+                        .padding(bottom = 16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
                             text = list.name,
-                            style = MaterialTheme.typography.headlineSmall, // M3 headline
+                            style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -523,16 +523,16 @@ fun CompletedListDialog(
 
                 Divider(
                     modifier = Modifier.padding(vertical = 12.dp),
-                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f) // M3 divider color
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
                 )
 
-                // Items List
+
                 LazyColumn(
                     modifier = Modifier
-                        .weight(1f, fill = false) // Ensure it doesn't take all space if content is small
+                        .weight(1f, fill = false)
                         .fillMaxWidth()
                         .padding(bottom = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp) // Increased spacing
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(items) { item ->
                         Row(
@@ -543,16 +543,16 @@ fun CompletedListDialog(
                             Row(
                                 modifier = Modifier.weight(1f),
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp) // Increased spacing
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
                                 if (item.imageUrl.isNotEmpty()) {
                                     AsyncImage(
                                         model = item.imageUrl,
                                         contentDescription = null,
                                         modifier = Modifier
-                                            .size(48.dp) // Slightly larger image
-                                            .clip(RoundedCornerShape(8.dp)), // M3 shape
-                                        contentScale = ContentScale.Crop // Crop for better fit
+                                            .size(48.dp)
+                                            .clip(RoundedCornerShape(8.dp)),
+                                        contentScale = ContentScale.Crop
                                     )
                                 }
                                 Column(modifier = Modifier.weight(1f)) {
@@ -574,7 +574,7 @@ fun CompletedListDialog(
                                                 model = item.merchantLogo,
                                                 contentDescription = null,
                                                 modifier = Modifier
-                                                    .height(18.dp) // Slightly larger
+                                                    .height(18.dp)
                                                     .width(52.dp),
                                                 contentScale = ContentScale.Fit
                                             )
@@ -594,7 +594,7 @@ fun CompletedListDialog(
                                 fontWeight = FontWeight.Bold,
                                 textDecoration = if (item.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
                                 color = if (item.isCompleted) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                                else MaterialTheme.colorScheme.primary // Use primary for price
+                                else MaterialTheme.colorScheme.primary
                             )
                         }
                     }
@@ -605,7 +605,7 @@ fun CompletedListDialog(
                     color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
                 )
 
-                // Total
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -618,7 +618,7 @@ fun CompletedListDialog(
                     )
                     Text(
                         text = "${totalCost.toInt()} ₺",
-                        style = MaterialTheme.typography.titleLarge, // M3 title
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.primary
                     )
@@ -627,3 +627,4 @@ fun CompletedListDialog(
         }
     }
 }
+

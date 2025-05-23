@@ -102,7 +102,7 @@ import com.yigitsenal.marketapp.ui.viewmodel.ShoppingListViewModel
 import com.yigitsenal.marketapp.util.Constants
 import java.text.DecimalFormat
 
-// formatWithDecimal uzantı fonksiyonunu ekliyorum
+
 fun Double.formatWithDecimal(): String {
     val formatter = DecimalFormat("#,##0.00")
     return formatter.format(this)
@@ -129,7 +129,7 @@ fun MarketScreen(
     // Filtreleme dialog'unu göstermek için state
     var showSortDialog by remember { mutableStateOf(false) }
 
-    // Popup gösterme durumunu takip etmek için state oluşturalım
+    // Popup gösterme durumunu takip etmek için state
     var showProductDetails by remember { mutableStateOf(false) }
 
     // Eğer seçilen ürün değiştiyse ve null değilse, popup'ı göster
@@ -141,7 +141,7 @@ fun MarketScreen(
         }
     }
 
-    // Sıralama dialog'u - Modern tasarım
+    // Sıralama dialog'u
     if (showSortDialog) {
         Dialog(
             onDismissRequest = { showSortDialog = false },
@@ -208,7 +208,7 @@ fun MarketScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     
-                    // Filtre seçenekleri - Modern tasarım
+                    // Filtre seçenekleri
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -352,7 +352,7 @@ fun MarketScreen(
         }
     }
 
-    // Popup dialog'u gösteriyoruz
+    // Popup dialog'u
     if (showProductDetails && selectedProduct != null) {
         ProductDetailDialog(
             product = selectedProduct!!,
@@ -766,10 +766,10 @@ fun QuantityControl(
                 fontWeight = FontWeight.Bold
             )
             
-            // Artırma butonu
+            // Arttırma butonu
             Icon(
                 Icons.Default.Add,
-                contentDescription = "Artır",
+                contentDescription = "Arttır",
                 tint = Color.White,
                 modifier = Modifier
                     .size(20.dp)
@@ -800,7 +800,7 @@ fun ProductDetailDialog(
     val isLoadingDetails by viewModel.isLoadingProductDetails.collectAsState()
     val selectedProduct by viewModel.selectedProduct.collectAsState()
 
-    // Seçilen satıcıyı takip etmek için state ekleyelim
+    // Seçilen satıcıyı takip etmek için state
     var selectedOffer by remember { mutableStateOf<Offer?>(null) }
 
     Dialog(
@@ -825,7 +825,7 @@ fun ProductDetailDialog(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 item {
-                    // Header with close button
+
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -864,7 +864,7 @@ fun ProductDetailDialog(
                 }
 
                 item {
-                    // Product Image
+                    // Ürün Resmi
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -898,7 +898,7 @@ fun ProductDetailDialog(
                 }
 
                 item {
-                    // Product details
+                    // Ürün Detayları
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -1209,7 +1209,7 @@ fun ProductDetailDialog(
                 item {
                     Spacer(modifier = Modifier.height(16.dp))
                     
-                    // Fiyat tahmini butonu ekliyoruz
+                    // Fiyat tahmini butonu
                     ElevatedButton(
                         onClick = { 
                             viewModel.predictFuturePrice() 

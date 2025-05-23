@@ -10,23 +10,23 @@ import java.nio.charset.StandardCharsets
 object ImageUtils {
     
     fun createImageRequest(context: Context, imageName: String, size: String = Constants.ImageSizes.MEDIUM): ImageRequest {
-        // Extract just the filename from the image field if it contains a URL-like structure
+        // URL benzeri bir yapı içeriyorsa resim alanından sadece dosya adını çıkar
         val actualFileName = extractFilename(imageName)
         Log.d("ImageUtils", "Original image name: $imageName")
         Log.d("ImageUtils", "Extracted filename: $actualFileName")
         
-        // Encode the filename properly
+
         val encodedImageName = URLEncoder.encode(actualFileName, StandardCharsets.UTF_8.toString())
-        
-        // Create the URL with the proper format
+
+        // URL'yi uygun biçimde oluşturma
         val imageUrl = "${Constants.ApiEndpoints.IMAGE}?file=$encodedImageName&size=$size"
         
         Log.d("ImageUtils", "Loading image from URL: $imageUrl")
         
         return ImageRequest.Builder(context)
             .data(imageUrl)
-            .memoryCachePolicy(CachePolicy.DISABLED) // Disable memory cache for debugging
-            .diskCachePolicy(CachePolicy.DISABLED) // Disable disk cache for debugging
+            .memoryCachePolicy(CachePolicy.DISABLED) // Hata ayıklama için bellek önbelleğini devre dışı bırak
+            .diskCachePolicy(CachePolicy.DISABLED) // Hata ayıklama için disk önbelleğini devre dışı bırak
             .crossfade(true)
             .listener(
                 onStart = { request ->
@@ -42,19 +42,15 @@ object ImageUtils {
             .build()
     }
     
-    /**
-     * Extracts the actual filename from a potentially URL-like string
-     * For example, if the input is "/image.php?file=product-name.jpg&size=md",
-     * this function will return "product-name.jpg"
-     */
+
     private fun extractFilename(imagePath: String): String {
-        // If the image path contains a URL query parameter "file="
+
         return if (imagePath.contains("file=")) {
             val fileParam = imagePath.substringAfter("file=").substringBefore("&")
             Log.d("ImageUtils", "Found file parameter: $fileParam")
             fileParam
         } else {
-            // Otherwise just return the original string
+
             imagePath
         }
     }

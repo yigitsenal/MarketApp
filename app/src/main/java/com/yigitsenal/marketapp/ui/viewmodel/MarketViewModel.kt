@@ -74,7 +74,7 @@ class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
             _newItemText
                 .debounce(300) // Kullanıcı yazarken her harf için arama yapmayı engelle
                 .collect { query ->
-                    if (query.isNotEmpty() && query.length > 2) { // En az 3 karakter olmalı
+                    if (query.isNotEmpty() && query.length > 1) { // En az 2 karakter olmalı
                         searchProducts(query)
                     } else if (query.isEmpty()) {
                         _products.value = emptyList()
@@ -103,7 +103,7 @@ class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
         searchJob?.cancel()
         
         // Çok kısa sorgular için arama yapma
-        if (query.trim().length < 2) {
+        if (query.trim().length < 1) {
             if (isNewSearch) {
                 _uiState.value = MarketUiState.Success(emptyList())
             }

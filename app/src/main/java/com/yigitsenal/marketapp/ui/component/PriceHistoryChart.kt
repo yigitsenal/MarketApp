@@ -217,7 +217,7 @@ private fun filterPriceHistoryByTimeRange(
 ): List<PriceHistory> {
     if (priceHistory.isEmpty()) return emptyList()
     
-    // Bugünün tarihini al (manuel tarih yerine gerçek tarihi kullan)
+    // Bugünün tarihini al
     val currentCalendar = Calendar.getInstance()
     // Gün sonuna ayarla
     currentCalendar.set(Calendar.HOUR_OF_DAY, 23)
@@ -236,15 +236,15 @@ private fun filterPriceHistoryByTimeRange(
     when (timeRange) {
         TimeRange.WEEK -> {
             // Son 7 günü göster (bugün dahil)
-            startCalendar.add(Calendar.DAY_OF_YEAR, -6) // Bugün dahil 7 gün
+            startCalendar.add(Calendar.DAY_OF_YEAR, -6)
         }
         TimeRange.MONTH -> {
             // Son 30 günü göster (bugün dahil)
-            startCalendar.add(Calendar.DAY_OF_YEAR, -29) // Bugün dahil 30 gün
+            startCalendar.add(Calendar.DAY_OF_YEAR, -29)
         }
         TimeRange.YEAR -> {
             // Son 365 günü göster (bugün dahil)
-            startCalendar.add(Calendar.DAY_OF_YEAR, -364) // Bugün dahil 365 gün
+            startCalendar.add(Calendar.DAY_OF_YEAR, -364)
         }
     }
     
