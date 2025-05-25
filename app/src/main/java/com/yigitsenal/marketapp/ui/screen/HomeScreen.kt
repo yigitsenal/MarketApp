@@ -39,6 +39,7 @@ import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material.icons.outlined.TrendingUp
@@ -93,7 +94,7 @@ fun HomeScreen(
     // Calculate statistics
     val totalLists = allLists.size
     val completedCount = completedLists.size
-    val completionRate = if (totalLists > 0) (completedCount.toFloat() / totalLists * 100).roundToInt() else 0
+    val activeCount = activeLists.size
     val weeklyLists = allLists.filter { 
         val weekAgo = System.currentTimeMillis() - (7 * 24 * 60 * 60 * 1000)
         it.date > weekAgo
@@ -135,7 +136,7 @@ fun HomeScreen(
                 StatisticsSection(
                     totalLists = totalLists,
                     completedCount = completedCount,
-                    completionRate = completionRate,
+                    activeCount = activeCount,
                     weeklyLists = weeklyLists
                 )
             }
@@ -258,7 +259,7 @@ private fun WelcomeHeader() {
 private fun StatisticsSection(
     totalLists: Int,
     completedCount: Int,
-    completionRate: Int,
+    activeCount: Int,
     weeklyLists: Int
 ) {
     Column(
@@ -286,27 +287,29 @@ private fun StatisticsSection(
             }
             item {
                 StatCard(
-                    title = "Tamamlanan",
-                    value = completedCount.toString(),
-                    icon = Icons.Filled.CheckCircle,
+                    title = "Aktif Listeler",
+                    value = activeCount.toString(),
+                    icon = Icons.Filled.ShoppingCart,
                     color = MaterialTheme.colorScheme.secondary
                 )
             }
             item {
                 StatCard(
-                    title = "Başarı Oranı",
-                    value = "%$completionRate",
-                    icon = Icons.Filled.TrendingUp,
+                    title = "Tamamlanan",
+                    value = completedCount.toString(),
+                    icon = Icons.Filled.CheckCircle,
                     color = MaterialTheme.colorScheme.tertiary
                 )
             }
-            item {
-                StatCard(
-                    title = "Bu Hafta",
-                    value = weeklyLists.toString(),
-                    icon = Icons.Filled.History,
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
-                )
+            if (weeklyLists > 0) {
+                item {
+                    StatCard(
+                        title = "Bu Hafta",
+                        value = weeklyLists.toString(),
+                        icon = Icons.Filled.History,
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                    )
+                }
             }
         }
     }
