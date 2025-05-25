@@ -36,37 +36,32 @@ class CartOptimizationRepository(
                         // API response'u debug edelim
                         println("DEBUG - API Response for '${item.name}':")
                         println("DEBUG - Number of offers: ${offers.size}")
+                        println("DEBUG - Shopping item details: quantity=${item.quantity}, unit=${item.unit}, price=${item.price}")
                         
-                        // En iyi teklifi bul (en düşük birim fiyat)
-                        val bestOffer = offers.minByOrNull { offer ->
-                            // Fiyat hesaplama önceliği: unit_price > price bölü miktar > price
-                            val effectiveUnitPrice = when {
-                                offer.unit_price > 0 -> offer.unit_price
-                                offer.price > 0 -> offer.price // price zaten birim fiyat olabilir
-                                else -> Double.MAX_VALUE
-                            }
-                            println("DEBUG - Offer: ${offer.name} from ${offer.merchant_id}, unit_price: ${offer.unit_price}, price: ${offer.price}, effective: $effectiveUnitPrice")
-                            effectiveUnitPrice
+                        // İlk birkaç teklifi detaylı logla
+                        offers.take(3).forEach { offer ->
+                            println("DEBUG - Raw offer: name='${offer.name}', price=${offer.price}, unit_price=${offer.unit_price}, quantity=${offer.quantity}, unit='${offer.unit}', merchant=${offer.merchant_id}")
                         }
+                        
+                        // En iyi teklifi bul - akıllı ürün eşleştirme ile
+                        val bestOffer = findBestMatchingOffer(item, offers)
                         
                         val currentTotalPrice = item.price // Bu zaten toplam fiyat (quantity dahil)
                         val potentialSavings = if (bestOffer != null) {
-                            // En iyi fiyatı belirle - unit_price öncelikli
-                            val bestUnitPrice = when {
-                                bestOffer.unit_price > 0 -> bestOffer.unit_price
-                                bestOffer.price > 0 -> bestOffer.price
-                                else -> 0.0
-                            }
-                            
-                            val bestOfferTotalPrice = bestUnitPrice * item.quantity
+                            // SIMPLE: API'deki price ile sepetteki price'ı direkt karşılaştır
+                            // Çünkü ikisi de aynı ürün için paket fiyatı
+                            val bestOfferPrice = bestOffer.price
                             
                             // Debug için log ekleyelim
                             println("DEBUG - Best offer found: ${bestOffer.name} at ${bestOffer.merchant_id}")
-                            println("DEBUG - Original item: ${item.name}, quantity: ${item.quantity}, current total: $currentTotalPrice")
-                            println("DEBUG - Best unit price: $bestUnitPrice, calculated total: $bestOfferTotalPrice")
-                            println("DEBUG - Potential savings: ${maxOf(0.0, currentTotalPrice - bestOfferTotalPrice)}")
+                            println("DEBUG - Original item: name='${item.name}', quantity=${item.quantity}, unit='${item.unit}', total_price=$currentTotalPrice")
+                            println("DEBUG - Best offer price: $bestOfferPrice")
+                            println("DEBUG - Direct comparison - Current: $currentTotalPrice vs Best: $bestOfferPrice")
                             
-                            maxOf(0.0, currentTotalPrice - bestOfferTotalPrice)
+                            // Sadece mantıklı tasarruf varsa göster
+                            val savings = currentTotalPrice - bestOfferPrice
+                            println("DEBUG - Potential savings: $savings")
+                            if (savings > 0 && bestOfferPrice > 0) savings else 0.0
                         } else 0.0
                         
                         optimizedItems.add(
@@ -155,10 +150,12 @@ class CartOptimizationRepository(
         val itemOptions = availableItems.groupBy { it.originalItem.name }
             .mapValues { (_, items) -> 
                 items.map { item ->
+                    // Use package price directly instead of unit calculations
+                    val packagePrice = item.bestOffer!!.price
                     Triple(
                         item,
-                        item.bestOffer!!.merchant_id,
-                        item.bestOffer.unit_price * item.originalItem.quantity
+                        item.bestOffer.merchant_id,
+                        packagePrice
                     )
                 }.distinctBy { it.second } // Aynı mağazadan gelen teklifler varsa en iyisini al
                     .sortedBy { it.third } // Fiyata göre sırala
@@ -254,26 +251,20 @@ class CartOptimizationRepository(
             .groupBy { it.merchantId }
             .map { (merchantId, storeInfos) ->
                 val allItems = storeInfos.flatMap { it.items }
-                // Recalculate total cost from actual items instead of summing temp totalCost values
+                // Use package price directly - no unit calculations needed
                 val totalCost = allItems.sumOf { item ->
                     if (item.bestOffer != null) {
-                        val unitPrice = when {
-                            item.bestOffer.unit_price > 0 -> item.bestOffer.unit_price
-                            item.bestOffer.price > 0 -> item.bestOffer.price
-                            else -> 0.0
-                        }
-                        unitPrice * item.originalItem.quantity
+                        // Simply use the package price from API
+                        item.bestOffer.price
                     } else {
                         0.0
                     }
                 }
-                val firstStore = storeInfos.first()
                 
                 println("DEBUG - Building final store: $merchantId, Items: ${allItems.size}, Total Cost: $totalCost")
                 allItems.forEach { item ->
-                    val unitPrice = item.bestOffer?.unit_price ?: 0.0
-                    val itemTotal = unitPrice * item.originalItem.quantity
-                    println("DEBUG - Item: ${item.originalItem.name}, Unit Price: $unitPrice, Quantity: ${item.originalItem.quantity}, Item Total: $itemTotal")
+                    val packagePrice = item.bestOffer?.price ?: 0.0
+                    println("DEBUG - Store item: ${item.originalItem.name}, Package Price: $packagePrice")
                 }
                 
                 StoreInfo(
@@ -338,40 +329,159 @@ class CartOptimizationRepository(
     }
     
     private fun getMerchantLogoUrl(merchantId: String): String {
-        return when (merchantId.lowercase()) {
-            "migros" -> "https://logo.clearbit.com/migros.com.tr"
-            "carrefour", "carrefoursa" -> "https://logo.clearbit.com/carrefour.com"
-            "pazarama" -> "https://logo.clearbit.com/pazarama.com"
-            "bim" -> "https://logo.clearbit.com/bim.com.tr"
-            "a101" -> "https://logo.clearbit.com/a101.com.tr"
-            "sok" -> "https://logo.clearbit.com/sokmarket.com.tr"
-            "tesco" -> "https://logo.clearbit.com/tesco.com"
-            "metro" -> "https://logo.clearbit.com/metro.com.tr"
-            "teknosa" -> "https://logo.clearbit.com/teknosa.com"
-            "mediamarkt" -> "https://logo.clearbit.com/mediamarkt.com.tr"
-            "vatan" -> "https://logo.clearbit.com/vatanbilgisayar.com"
-            "hepsiburada" -> "https://logo.clearbit.com/hepsiburada.com"
-            "trendyol" -> "https://logo.clearbit.com/trendyol.com"
-            "amazon" -> "https://logo.clearbit.com/amazon.com.tr"
-            "getir" -> "https://logo.clearbit.com/getir.com"
-            "banabi" -> "https://logo.clearbit.com/banabi.com"
-            else -> {
-                // Sayısal ID'ler için de logo URL'leri
-                try {
-                    val id = merchantId.toInt()
-                    when (id) {
-                        10370 -> "https://logo.clearbit.com/pazarama.com"
-                        10371 -> "https://logo.clearbit.com/carrefour.com"
-                        10372 -> "https://logo.clearbit.com/migros.com.tr"
-                        10373 -> "https://logo.clearbit.com/bim.com.tr"
-                        10374 -> "https://logo.clearbit.com/a101.com.tr"
-                        10375 -> "https://logo.clearbit.com/sokmarket.com.tr"
-                        else -> ""
-                    }
-                } catch (e: NumberFormatException) {
-                    ""
+        // Local API endpoint'ini kullan - merchant ID'yi direkt logo.php'ye gönder
+        val logoUrl = "http://192.168.1.36:8000/logo.php?id=$merchantId"
+        println("DEBUG - Logo URL for merchant '$merchantId': '$logoUrl'")
+        return logoUrl
+    }
+    
+    private fun extractMerchantIdFromName(merchantName: String): String? {
+        // "Market #16743" formatındaki isimlerden ID'yi çıkar
+        val regex = Regex("Market #(\\d+)")
+        return regex.find(merchantName)?.groupValues?.get(1)
+    }
+    
+    private fun findBestMatchingOffer(shoppingItem: ShoppingListItem, offers: List<MarketItem>): MarketItem? {
+        if (offers.isEmpty()) return null
+        
+        println("DEBUG - Finding best match for: '${shoppingItem.name}' (${shoppingItem.quantity} ${shoppingItem.unit})")
+        
+        // Önce valid fiyatlı teklifleri filtrele
+        val validOffers = offers.filter { it.price > 0 }
+        if (validOffers.isEmpty()) return null
+        
+        // Akıllı eşleştirme: relevance score hesapla
+        val scoredOffers = validOffers.map { offer ->
+            val relevanceScore = calculateRelevanceScore(shoppingItem, offer)
+            println("DEBUG - Offer: '${offer.name}' - Price: ${offer.price}, Relevance: $relevanceScore")
+            Pair(offer, relevanceScore)
+        }.filter { it.second > 0.0 } // Sadece relevant olanları al
+        
+        if (scoredOffers.isEmpty()) {
+            println("DEBUG - No relevant offers found, taking cheapest")
+            return validOffers.minByOrNull { it.price }
+        }
+        
+        // En yüksek relevance score'a sahip teklifleri al
+        val maxRelevance = scoredOffers.maxOf { it.second }
+        val bestMatches = scoredOffers.filter { it.second == maxRelevance }
+        
+        // Aynı relevance'a sahip olanlar arasından en ucuzunu seç
+        val bestOffer = bestMatches.minByOrNull { it.first.price }?.first
+        
+        println("DEBUG - Selected best match: '${bestOffer?.name}' - Price: ${bestOffer?.price}, Relevance: $maxRelevance")
+        return bestOffer
+    }
+    
+    private fun calculateRelevanceScore(shoppingItem: ShoppingListItem, offer: MarketItem): Double {
+        var score = 0.0
+        
+        val shoppingName = shoppingItem.name.lowercase().trim()
+        val offerName = offer.name.lowercase().trim()
+        
+        // 1. Exact name match (highest priority)
+        if (shoppingName == offerName) {
+            score += 100.0
+            return score
+        }
+        
+        // 2. Brand matching (extract brand from both)
+        val shoppingBrand = extractBrand(shoppingName)
+        val offerBrand = extractBrand(offerName)
+        if (shoppingBrand.isNotEmpty() && offerBrand.isNotEmpty() && shoppingBrand == offerBrand) {
+            score += 50.0
+        }
+        
+        // 3. Main product keyword matching
+        val shoppingKeywords = extractProductKeywords(shoppingName)
+        val offerKeywords = extractProductKeywords(offerName)
+        val keywordMatches = shoppingKeywords.intersect(offerKeywords).size
+        val keywordScore = (keywordMatches.toDouble() / maxOf(shoppingKeywords.size, 1)) * 30.0
+        score += keywordScore
+        
+        // 4. Package size compatibility
+        val sizeScore = calculateSizeCompatibility(shoppingItem, offer)
+        score += sizeScore
+        
+        // 5. Penalize very different product types (bundle vs single item)
+        if (detectProductMismatch(shoppingName, offerName)) {
+            score -= 50.0
+        }
+        
+        return maxOf(0.0, score)
+    }
+    
+    private fun extractBrand(productName: String): String {
+        val brands = listOf("lipton", "arifoğlu", "ülker", "eti", "nestle", "unilever", "p&g", "coca-cola", "pepsi")
+        return brands.find { productName.contains(it) } ?: ""
+    }
+    
+    private fun extractProductKeywords(productName: String): Set<String> {
+        // Remove brand, size, and common words to get core product keywords
+        val cleanName = productName
+            .replace(Regex("\\d+\\s*(gr|kg|ml|lt|adet|li|lü|lu)"), "") // Remove size info
+            .replace(Regex("(lipton|arifoğlu|ülker|eti)"), "") // Remove common brands
+            .replace(Regex("\\+.*"), "") // Remove bundle info after +
+            .split("\\s+".toRegex())
+            .map { it.trim() }
+            .filter { it.length > 2 && !it.matches(Regex("\\d+")) } // Remove short words and numbers
+        
+        return cleanName.toSet()
+    }
+    
+    private fun calculateSizeCompatibility(shoppingItem: ShoppingListItem, offer: MarketItem): Double {
+        // Extract size from shopping item name and offer name
+        val shoppingSize = extractSize(shoppingItem.name)
+        val offerSize = extractSize(offer.name)
+        
+        // If both have size info, check compatibility
+        if (shoppingSize != null && offerSize != null) {
+            val (shoppingValue, shoppingUnit) = shoppingSize
+            val (offerValue, offerUnit) = offerSize
+            
+            // Same unit comparison
+            if (shoppingUnit == offerUnit) {
+                val ratio = offerValue / shoppingValue
+                return when {
+                    ratio in 0.8..1.2 -> 20.0 // Very close size
+                    ratio in 0.5..2.0 -> 10.0  // Reasonable size
+                    else -> -10.0 // Very different size
+                }
+            }
+            
+            // Different unit but convertible (gr/kg, ml/lt)
+            if ((shoppingUnit == "gr" && offerUnit == "kg") || (shoppingUnit == "kg" && offerUnit == "gr")) {
+                val normalizedShopping = if (shoppingUnit == "gr") shoppingValue / 1000 else shoppingValue
+                val normalizedOffer = if (offerUnit == "gr") offerValue / 1000 else offerValue
+                val ratio = normalizedOffer / normalizedShopping
+                return when {
+                    ratio in 0.8..1.2 -> 15.0
+                    ratio in 0.5..2.0 -> 5.0
+                    else -> -5.0
                 }
             }
         }
+        
+        return 0.0 // No size info available
+    }
+    
+    private fun extractSize(productName: String): Pair<Double, String>? {
+        val sizeRegex = Regex("(\\d+(?:[.,]\\d+)?)\\s*(gr|kg|ml|lt|adet)")
+        val match = sizeRegex.find(productName.lowercase())
+        return if (match != null) {
+            val value = match.groupValues[1].replace(',', '.').toDoubleOrNull() ?: return null
+            val unit = match.groupValues[2]
+            Pair(value, unit)
+        } else null
+    }
+    
+    private fun detectProductMismatch(shoppingName: String, offerName: String): Boolean {
+        // Detect if one is a bundle/combo and the other is single item
+        val bundleKeywords = listOf("\\+", "combo", "set", "paket", "bundle", "tekli", "tek dem")
+        val shoppingHasBundle = bundleKeywords.any { shoppingName.contains(it.toRegex(RegexOption.IGNORE_CASE)) }
+        val offerHasBundle = bundleKeywords.any { offerName.contains(it.toRegex(RegexOption.IGNORE_CASE)) }
+        
+        // If one is bundle and other is not, it's a mismatch
+        return shoppingHasBundle != offerHasBundle
     }
 }

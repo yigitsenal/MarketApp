@@ -79,11 +79,11 @@ fun CartOptimizationSection(
     
     Card(
         modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(20.dp)
         ) {
             // Header - daha kompakt
             Row(
@@ -396,11 +396,11 @@ private fun StoreCard(
         modifier = modifier
             .fillMaxWidth()
             .clickable { isExpanded = !isExpanded },
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(20.dp)
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -410,25 +410,25 @@ private fun StoreCard(
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // Logo varsa dikdörtgen ve büyük, yoksa Store icon
                     if (store.merchantLogo.isNotEmpty()) {
-                        println("DEBUG UI - Loading logo for ${store.merchantName}: ${store.merchantLogo}")
                         AsyncImage(
                             model = ImageRequest.Builder(LocalContext.current)
                                 .data(store.merchantLogo)
                                 .crossfade(true)
                                 .build(),
                             contentDescription = store.merchantName,
-                            contentScale = ContentScale.Crop,
+                            contentScale = ContentScale.Fit,
                             modifier = Modifier
-                                .size(32.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.surface)
+                                .size(width = 56.dp, height = 40.dp)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(Color.Transparent)
                         )
                     } else {
-                        println("DEBUG UI - No logo for ${store.merchantName} (ID: ${store.merchantId})")
+                        // Fallback Store icon
                         Box(
                             modifier = Modifier
-                                .size(32.dp)
+                                .size(40.dp)
                                 .clip(CircleShape)
                                 .background(MaterialTheme.colorScheme.primary),
                             contentAlignment = Alignment.Center
@@ -437,7 +437,7 @@ private fun StoreCard(
                                 imageVector = Icons.Default.Store,
                                 contentDescription = null,
                                 tint = Color.White,
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     }
@@ -445,16 +445,24 @@ private fun StoreCard(
                     Spacer(modifier = Modifier.width(12.dp))
                     
                     Column {
+                        // Sadece proper merchant name varsa göster, yoksa "Çevrimiçi Mağaza"
+                        val displayName = if (store.merchantName.isNotEmpty() && 
+                                           !store.merchantName.contains(Regex("Market #\\d+"))) {
+                            store.merchantName
+                        } else {
+                            "Çevrimiçi Mağaza"
+                        }
+                        
                         Text(
-                            text = store.merchantName.ifEmpty { "Market ${store.merchantId}" },
-                            style = MaterialTheme.typography.bodyMedium,
+                            text = displayName,
+                            style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Medium,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
                             text = "${store.itemCount} ürün",
-                            style = MaterialTheme.typography.bodySmall,
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -528,8 +536,20 @@ private fun OptimizedItemRow(
             horizontalAlignment = Alignment.End
         ) {
             if (item.bestOffer != null) {
+                // Calculate effective unit price: doğru hesaplama mantığı
+                val effectiveUnitPrice = when {
+                    // Eğer unit_price > 0 ise, bu birim başına fiyattır
+                    item.bestOffer.unit_price > 0 -> item.bestOffer.unit_price
+                    // Eğer price > 0 ise ve quantity bilgisi varsa, price/quantity = birim fiyat
+                    item.bestOffer.price > 0 && item.bestOffer.quantity > 0 -> item.bestOffer.price / item.bestOffer.quantity
+                    // Eğer sadece price varsa, bu muhtemelen birim fiyattır
+                    item.bestOffer.price > 0 -> item.bestOffer.price
+                    else -> 0.0
+                }
+                val totalPrice = effectiveUnitPrice * item.originalItem.quantity
+                
                 Text(
-                    text = "₺${String.format("%.2f", item.bestOffer.unit_price * item.originalItem.quantity)}",
+                    text = "₺${String.format("%.2f", totalPrice)}",
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Medium
                 )
