@@ -77,6 +77,7 @@ import com.yigitsenal.marketapp.ui.theme.MarketAppTheme
 import com.yigitsenal.marketapp.ui.theme.PrimaryColor
 import com.yigitsenal.marketapp.ui.viewmodel.MarketViewModel
 import com.yigitsenal.marketapp.ui.viewmodel.ShoppingListViewModel
+import com.yigitsenal.marketapp.ui.viewmodel.CartOptimizationViewModel
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.platform.LocalContext
@@ -87,8 +88,10 @@ import androidx.compose.foundation.background
 class MainActivity : ComponentActivity(), ImageLoaderFactory {
     private lateinit var marketViewModel: MarketViewModel
     private lateinit var shoppingListViewModel: ShoppingListViewModel
+    private lateinit var cartOptimizationViewModel: CartOptimizationViewModel
     private lateinit var marketViewModelFactory: ViewModelProvider.Factory
     private lateinit var shoppingListViewModelFactory: ViewModelProvider.Factory
+    private lateinit var cartOptimizationViewModelFactory: ViewModelProvider.Factory
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -97,6 +100,7 @@ class MainActivity : ComponentActivity(), ImageLoaderFactory {
         val appContainer = (application as MarketApplication).container
         marketViewModelFactory = appContainer.marketViewModelFactory
         shoppingListViewModelFactory = appContainer.shoppingListViewModelFactory
+        cartOptimizationViewModelFactory = appContainer.cartOptimizationViewModelFactory
 
         setContent {
             val systemInDarkTheme = isSystemInDarkTheme()
@@ -106,10 +110,19 @@ class MainActivity : ComponentActivity(), ImageLoaderFactory {
             ) {
                 val marketViewModel = ViewModelProvider(this, marketViewModelFactory)[MarketViewModel::class.java]
                 val shoppingListViewModel = ViewModelProvider(this, shoppingListViewModelFactory)[ShoppingListViewModel::class.java]
+                val cartOptimizationViewModel = ViewModelProvider(this, cartOptimizationViewModelFactory)[CartOptimizationViewModel::class.java]
+
+                // Otomatik optimizasyon için callback kurulumu
+                shoppingListViewModel.setOnListChangedCallback { listId ->
+                    if (cartOptimizationViewModel.uiState.value.isAutoOptimizationEnabled) {
+                        cartOptimizationViewModel.optimizeCart(listId)
+                    }
+                }
 
                 MainScreen(
                     marketViewModel = marketViewModel,
-                    shoppingListViewModel = shoppingListViewModel
+                    shoppingListViewModel = shoppingListViewModel,
+                    cartOptimizationViewModel = cartOptimizationViewModel
                 )
             }
         }
@@ -134,7 +147,8 @@ enum class Screen {
 @Composable
 fun MainScreen(
     marketViewModel: MarketViewModel,
-    shoppingListViewModel: ShoppingListViewModel
+    shoppingListViewModel: ShoppingListViewModel,
+    cartOptimizationViewModel: CartOptimizationViewModel
 ) {
     var currentScreen by remember { mutableStateOf(Screen.HOME) }
     var selectedCompletedList by remember { mutableStateOf<ShoppingList?>(null) }
@@ -447,6 +461,7 @@ fun MainScreen(
                 Screen.CART -> {
                     ShoppingListScreen(
                         viewModel = shoppingListViewModel,
+                        cartOptimizationViewModel = cartOptimizationViewModel,
                         onNavigateToMarket = { currentScreen = Screen.SEARCH },
                         modifier = Modifier
                     )

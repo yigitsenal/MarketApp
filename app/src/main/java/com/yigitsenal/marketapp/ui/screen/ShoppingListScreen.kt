@@ -75,8 +75,10 @@ import androidx.compose.ui.unit.sp
 import com.yigitsenal.marketapp.R
 import com.yigitsenal.marketapp.data.model.ShoppingList
 import com.yigitsenal.marketapp.data.model.ShoppingListItem
+import com.yigitsenal.marketapp.ui.component.CartOptimizationSection
 import com.yigitsenal.marketapp.ui.theme.PrimaryColor
 import com.yigitsenal.marketapp.ui.viewmodel.ShoppingListViewModel
+import com.yigitsenal.marketapp.ui.viewmodel.CartOptimizationViewModel
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import androidx.compose.ui.platform.LocalContext
@@ -85,6 +87,7 @@ import androidx.compose.ui.platform.LocalContext
 @Composable
 fun ShoppingListScreen(
     viewModel: ShoppingListViewModel,
+    cartOptimizationViewModel: CartOptimizationViewModel,
     onNavigateToMarket: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -92,6 +95,7 @@ fun ShoppingListScreen(
     val items by viewModel.activeListItems.collectAsState()
     val isSelectionMode by viewModel.isSelectionMode.collectAsState()
     val selectedItems by viewModel.selectedItems.collectAsState()
+    val optimizationUiState by cartOptimizationViewModel.uiState.collectAsState()
     val totalCost = items.sumOf { it.price }
     var showDeleteDialog by remember { mutableStateOf(false) }
     var itemToDelete by remember { mutableStateOf<ShoppingListItem?>(null) }
@@ -227,28 +231,58 @@ fun ShoppingListScreen(
             if (items.isEmpty()) {
                 EmptyListView()
             } else {
-                ShoppingListContent(
-                    items = items,
-                    selectedItems = selectedItems,
-                    isSelectionMode = isSelectionMode,
-                    onItemClick = { 
-                        if (isSelectionMode) {
-                            viewModel.toggleItemSelection(it)
-                        } else {
-                            viewModel.toggleItemCompletion(it)
-                        }
-                    },
-                    onItemLongClick = {
-                        viewModel.toggleItemSelection(it)
-                    },
-                    onItemDelete = { 
-                        itemToDelete = it
-                        showDeleteDialog = true
-                    },
-                    onQuantityChange = { item, newQuantity ->
-                        viewModel.updateItemQuantity(item, newQuantity)
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Sepet Optimizasyonu Bölümü
+                    item {
+                        CartOptimizationSection(
+                            uiState = optimizationUiState,
+                            onOptimizeClick = {
+                                activeList?.let { list ->
+                                    cartOptimizationViewModel.optimizeCart(list.id)
+                                }
+                            },
+                            onRefreshClick = {
+                                cartOptimizationViewModel.refreshOptimization()
+                            },
+                            onToggleAutoOptimization = {
+                                cartOptimizationViewModel.toggleAutoOptimization()
+                            }
+                        )
                     }
-                )
+                    
+                    // Alışveriş Listesi Öğeleri
+                    items(
+                        items = items,
+                        key = { it.id }
+                    ) { item ->
+                        ShoppingListItemCard(
+                            item = item,
+                            isSelected = selectedItems.contains(item),
+                            isSelectionMode = isSelectionMode,
+                            onClick = { 
+                                if (isSelectionMode) {
+                                    viewModel.toggleItemSelection(item)
+                                } else {
+                                    viewModel.toggleItemCompletion(item)
+                                }
+                            },
+                            onLongClick = {
+                                viewModel.toggleItemSelection(item)
+                            },
+                            onDelete = { 
+                                itemToDelete = item
+                                showDeleteDialog = true
+                            },
+                            onQuantityChange = { newQuantity ->
+                                viewModel.updateItemQuantity(item, newQuantity)
+                            }
+                        )
+                    }
+                }
             }
         }
     }
@@ -537,6 +571,205 @@ fun ShoppingListItemRow(
                             imageVector = Icons.Default.Delete,
                             contentDescription = "Sil",
                             tint = Color.Red
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun ShoppingListItemCard(
+    item: ShoppingListItem,
+    isSelected: Boolean,
+    isSelectionMode: Boolean,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+    onDelete: () -> Unit,
+    onQuantityChange: (Double) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            ),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = when {
+                isSelected -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.7f)
+                item.isCompleted -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                else -> MaterialTheme.colorScheme.surface
+            }
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 8.dp else 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Sol taraf: Checkbox ve ürün bilgileri
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Checkbox (sadece selection mode'da görünür)
+                if (isSelectionMode) {
+                    Checkbox(
+                        checked = isSelected,
+                        onCheckedChange = { onClick() },
+                        modifier = Modifier.padding(end = 12.dp)
+                    )
+                }
+
+                // Ürün resmi
+                if (item.imageUrl.isNotEmpty()) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(item.imageUrl)
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = item.name,
+                        modifier = Modifier
+                            .size(56.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant),
+                        contentScale = ContentScale.Crop
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                }
+
+                // Ürün bilgileri
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = item.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                        textDecoration = if (item.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
+                        color = if (item.isCompleted) 
+                            MaterialTheme.colorScheme.onSurfaceVariant 
+                        else 
+                            MaterialTheme.colorScheme.onSurface,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    
+                    Spacer(modifier = Modifier.height(4.dp))
+                    
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Mağaza logosu
+                        if (item.merchantLogo.isNotEmpty()) {
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(item.merchantLogo)
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .height(20.dp)
+                                    .width(40.dp)
+                                    .clip(RoundedCornerShape(4.dp)),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
+                        
+                        Text(
+                            text = "₺${String.format("%.2f", item.price)}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        
+                        Text(
+                            text = "(${item.quantity} ${item.unit})",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+
+            // Sağ taraf: Miktar kontrolleri ve aksiyon butonları
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Miktar kontrolleri
+                if (!item.isCompleted) {
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = MaterialTheme.colorScheme.primaryContainer
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            // Azaltma butonu
+                            IconButton(
+                                onClick = {
+                                    if (item.quantity > 1) {
+                                        onQuantityChange(item.quantity - 1)
+                                    }
+                                },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Clear,
+                                    contentDescription = "Azalt",
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                            
+                            Text(
+                                text = item.quantity.toInt().toString(),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.width(24.dp),
+                                textAlign = TextAlign.Center
+                            )
+                            
+                            // Artırma butonu
+                            IconButton(
+                                onClick = { onQuantityChange(item.quantity + 1) },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Add,
+                                    contentDescription = "Artır",
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Silme butonu (sadece selection mode olmadığında)
+                if (!isSelectionMode) {
+                    IconButton(
+                        onClick = onDelete,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Delete,
+                            contentDescription = "Sil",
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 }

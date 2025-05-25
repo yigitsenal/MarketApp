@@ -5,8 +5,10 @@ import com.yigitsenal.marketapp.data.local.MarketDatabase
 import com.yigitsenal.marketapp.data.network.RetrofitClient
 import com.yigitsenal.marketapp.data.repository.MarketRepository
 import com.yigitsenal.marketapp.data.repository.ShoppingListRepository
+import com.yigitsenal.marketapp.data.repository.CartOptimizationRepository
 import com.yigitsenal.marketapp.ui.viewmodel.MarketViewModelFactory
 import com.yigitsenal.marketapp.ui.viewmodel.ShoppingListViewModelFactory
+import com.yigitsenal.marketapp.ui.viewmodel.CartOptimizationViewModelFactory
 
 class MarketApplication : Application() {
     lateinit var container: AppContainer
@@ -26,7 +28,9 @@ class AppContainer(private val application: Application) {
 
     private val marketRepository = MarketRepository(marketDao, apiService)
     private val shoppingListRepository = ShoppingListRepository(shoppingListDao, shoppingListItemDao)
+    private val cartOptimizationRepository = CartOptimizationRepository(apiService, shoppingListItemDao)
 
     val marketViewModelFactory = MarketViewModelFactory(marketRepository)
     val shoppingListViewModelFactory = ShoppingListViewModelFactory(shoppingListRepository)
+    val cartOptimizationViewModelFactory = CartOptimizationViewModelFactory(cartOptimizationRepository)
 } 

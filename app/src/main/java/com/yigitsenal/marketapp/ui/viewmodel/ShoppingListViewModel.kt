@@ -30,6 +30,9 @@ class ShoppingListViewModel(
     private val _activeShoppingList = MutableStateFlow<ShoppingList?>(null)
     val activeShoppingList: StateFlow<ShoppingList?> = _activeShoppingList
     
+    // Optimizasyon tetikleme için callback
+    private var onListChangedCallback: ((Int) -> Unit)? = null
+    
     // Tüm alışveriş listeleri
     val allShoppingLists = repository.getAllShoppingLists()
         .stateIn(
@@ -111,11 +114,13 @@ class ShoppingListViewModel(
                     name = name,
                     quantity = quantity,
                     unit = unit,
+                    price = quantity * unitPrice, // Toplam fiyat = miktar * birim fiyat
                     unitPrice = unitPrice,
                     isCompleted = false,
                     date = Date().time
                 )
                 repository.insertItem(newItem)
+                notifyListChanged()
             }
         }
     }
@@ -150,11 +155,13 @@ class ShoppingListViewModel(
 
             if (existingItem != null) {
                 // Aynı mağazadan aynı ürün varsa miktarını ve fiyatını güncelle
+                val newQuantity = existingItem.quantity + 1.0
                 val updatedItem = existingItem.copy(
-                    quantity = existingItem.quantity + 1.0,
-                    price = existingItem.price + marketItem.price
+                    quantity = newQuantity,
+                    price = marketItem.price * newQuantity // Toplam fiyat = price * miktar
                 )
                 repository.updateItem(updatedItem)
+                notifyListChanged()
             } else {
                 // Farklı mağazadan veya yeni ürünse yeni satır olarak ekle
                 val newItem = ShoppingListItem(
@@ -162,14 +169,15 @@ class ShoppingListViewModel(
                     name = marketItem.name,
                     quantity = 1.0,
                     unit = "adet",
-                    price = marketItem.price,
-                    unitPrice = marketItem.unit_price,
+                    price = marketItem.price * 1.0, // Toplam fiyat = price * miktar
+                    unitPrice = marketItem.price,
                     merchantId = marketItem.merchant_id,
                     merchantLogo = merchantLogo,
                     imageUrl = imageUrl,
                     isCompleted = false
                 )
                 repository.insertItem(newItem)
+                notifyListChanged()
             }
         }
     }
@@ -182,11 +190,13 @@ class ShoppingListViewModel(
             }
 
             if (existingItem != null) {
+                val newQuantity = existingItem.quantity + 1.0
                 val updatedItem = existingItem.copy(
-                    quantity = existingItem.quantity + 1.0,
-                    price = existingItem.price + marketItem.price
+                    quantity = newQuantity,
+                    price = marketItem.price * newQuantity // Toplam fiyat = price * miktar
                 )
                 repository.updateItem(updatedItem)
+                notifyListChanged()
             }
         }
     }
@@ -200,14 +210,16 @@ class ShoppingListViewModel(
 
             if (existingItem != null) {
                 if (existingItem.quantity > 1) {
+                    val newQuantity = existingItem.quantity - 1.0
                     val updatedItem = existingItem.copy(
-                        quantity = existingItem.quantity - 1.0,
-                        price = existingItem.price - marketItem.price
+                        quantity = newQuantity,
+                        price = marketItem.price * newQuantity // Toplam fiyat = price * miktar
                     )
                     repository.updateItem(updatedItem)
                 } else {
                     repository.deleteItem(existingItem)
                 }
+                notifyListChanged() // Bu satır eksikti!
             }
         }
     }
@@ -221,6 +233,7 @@ class ShoppingListViewModel(
     fun deleteItem(item: ShoppingListItem) {
         viewModelScope.launch {
             repository.deleteItem(item)
+            notifyListChanged()
         }
     }
     
@@ -231,9 +244,11 @@ class ShoppingListViewModel(
                     name = name,
                     quantity = quantity,
                     unit = unit,
-                    unitPrice = unitPrice
+                    unitPrice = unitPrice,
+                    price = quantity * unitPrice // Toplam fiyat = miktar * birim fiyat
                 )
             )
+            notifyListChanged()
         }
     }
     
@@ -267,6 +282,7 @@ class ShoppingListViewModel(
             }
             _selectedItems.value = emptySet()
             _isSelectionMode.value = false
+            notifyListChanged()
         }
     }
 
@@ -277,12 +293,14 @@ class ShoppingListViewModel(
 
     fun updateItemQuantity(item: ShoppingListItem, newQuantity: Double) {
         viewModelScope.launch {
-            val pricePerUnit = item.price / item.quantity
+            // unitPrice alanı varsa onu kullan, yoksa mevcut fiyatı miktara böl
+            val pricePerUnit = if (item.unitPrice > 0) item.unitPrice else item.price / item.quantity
             val updatedItem = item.copy(
                 quantity = newQuantity,
                 price = pricePerUnit * newQuantity
             )
             repository.updateItem(updatedItem)
+            notifyListChanged()
         }
     }
     
@@ -308,6 +326,16 @@ class ShoppingListViewModel(
 
     fun getItemsForList(listId: Int): Flow<List<ShoppingListItem>> {
         return repository.getItemsForList(listId)
+    }
+    
+    fun setOnListChangedCallback(callback: (Int) -> Unit) {
+        onListChangedCallback = callback
+    }
+    
+    private fun notifyListChanged() {
+        _activeShoppingList.value?.let { list ->
+            onListChangedCallback?.invoke(list.id)
+        }
     }
 }
 
