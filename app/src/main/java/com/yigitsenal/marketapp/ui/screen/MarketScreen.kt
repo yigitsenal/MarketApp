@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,6 +25,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.items
@@ -44,6 +46,17 @@ import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.ViewList
+import androidx.compose.material.icons.filled.Store
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Psychology
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Insights
+import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.TrendingDown
+import androidx.compose.material.icons.filled.TrendingFlat
 import androidx.compose.material.icons.outlined.Clear
 import androidx.compose.material.icons.outlined.TrendingUp
 import androidx.compose.material3.AlertDialog
@@ -1193,96 +1206,132 @@ fun ProductDetailDialog(
     ) {
         Card(
             modifier = Modifier
-                .fillMaxWidth(0.95f)
-                .padding(8.dp)
-                .shadow(elevation = 16.dp, shape = RoundedCornerShape(16.dp)),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                .fillMaxWidth(0.96f)
+                .fillMaxHeight(0.9f)
+                .shadow(
+                    elevation = 8.dp, 
+                    shape = RoundedCornerShape(24.dp),
+                    ambientColor = PrimaryColor.copy(alpha = 0.05f),
+                    spotColor = PrimaryColor.copy(alpha = 0.08f)
+                ),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
             LazyColumn(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.padding(0.dp),
+                verticalArrangement = Arrangement.spacedBy(0.dp)
             ) {
+                // Modern Header with Gradient Background
                 item {
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Ürün Detayları",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = PrimaryColor
-                        )
-
-                        IconButton(
-                            onClick = onDismiss,
-                            modifier = Modifier
-                                .size(40.dp)
-                                .background(
-                                    color = Color.LightGray.copy(alpha = 0.2f),
-                                    shape = CircleShape
-                                )
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Close,
-                                contentDescription = "Kapat",
-                                tint = Color.Gray
-                            )
-                        }
-                    }
-
-                    Divider(
-                        modifier = Modifier.padding(vertical = 8.dp),
-                        color = Color.LightGray.copy(alpha = 0.5f)
-                    )
-                }
-
-                item {
-                    // Ürün Resmi
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(200.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Color(0xFFF5F5F5))
-                            .padding(8.dp),
-                        contentAlignment = Alignment.Center
+                            .background(
+                                brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                                    colors = listOf(
+                                        PrimaryColor,
+                                        PrimaryColor.copy(alpha = 0.8f)
+                                    )
+                                ),
+                                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+                            )
+                            .padding(20.dp)
                     ) {
-                        val imageUrl = if (product.image.startsWith("/")) {
-                            "${Constants.API_BASE_URL}${product.image}"
-                        } else if (product.image.contains("file=")) {
-                            val filename = product.image.substringAfter("file=").substringBefore("&")
-                            "${Constants.ApiEndpoints.IMAGE}?file=${filename}&size=${Constants.ImageSizes.LARGE}"
-                        } else {
-                            "${Constants.ApiEndpoints.IMAGE}?file=${product.image}&size=${Constants.ImageSizes.LARGE}"
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = "Ürün Detayları",
+                                    style = MaterialTheme.typography.headlineSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
+                                Text(
+                                    text = "Fiyat karşılaştırması ve geçmişi",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color.White.copy(alpha = 0.8f)
+                                )
+                            }
+
+                            Card(
+                                onClick = onDismiss,
+                                modifier = Modifier.size(44.dp),
+                                shape = CircleShape,
+                                colors = CardDefaults.cardColors(
+                                    containerColor = Color.White.copy(alpha = 0.2f)
+                                ),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                            ) {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier.fillMaxSize()
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = "Kapat",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                            }
                         }
-
-                        AsyncImage(
-                            model = ImageRequest.Builder(LocalContext.current)
-                                .data(imageUrl)
-                                .crossfade(true)
-                                .build(),
-                            contentDescription = product.name,
-                            modifier = Modifier.fillMaxSize(0.8f),
-                            contentScale = ContentScale.Fit
-                        )
                     }
-
-                    Spacer(modifier = Modifier.height(16.dp))
                 }
 
+                // Modern Product Image Section
                 item {
-                    // Ürün Detayları
                     Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp)),
+                            .padding(horizontal = 20.dp, vertical = 8.dp),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(220.dp)
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            val imageUrl = if (product.image.startsWith("/")) {
+                                "${Constants.API_BASE_URL}${product.image}"
+                            } else if (product.image.contains("file=")) {
+                                val filename = product.image.substringAfter("file=").substringBefore("&")
+                                "${Constants.ApiEndpoints.IMAGE}?file=${filename}&size=${Constants.ImageSizes.LARGE}"
+                            } else {
+                                "${Constants.ApiEndpoints.IMAGE}?file=${product.image}&size=${Constants.ImageSizes.LARGE}"
+                            }
+
+                            AsyncImage(
+                                model = ImageRequest.Builder(LocalContext.current)
+                                    .data(imageUrl)
+                                    .crossfade(true)
+                                    .build(),
+                                contentDescription = product.name,
+                                modifier = Modifier.fillMaxSize(0.85f),
+                                contentScale = ContentScale.Fit
+                            )
+                        }
+                    }
+                }
+
+                // Modern Product Info Section
+                item {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 8.dp),
+                        shape = RoundedCornerShape(20.dp),
                         colors = CardDefaults.cardColors(
                             containerColor = MaterialTheme.colorScheme.surface
                         ),
@@ -1291,29 +1340,32 @@ fun ProductDetailDialog(
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp)
+                                .padding(20.dp)
                         ) {
+                            // Brand, Logo, and Quantity Row
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.SpaceBetween,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                // Marka
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(PrimaryColor.copy(alpha = 0.1f))
-                                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                                // Modern Brand Badge
+                                Card(
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = PrimaryColor.copy(alpha = 0.1f)
+                                    ),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                                 ) {
                                     Text(
                                         text = product.brand,
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Bold,
-                                        color = PrimaryColor
+                                        color = PrimaryColor,
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                                     )
                                 }
 
-                                // Mağaza logosu (marka ve miktar arasında)
+                                // Store Logo (if available)
                                 if (product.merchant_logo.isNotEmpty()) {
                                     val logoUrl = if (product.merchant_logo.startsWith("/")) {
                                         "${Constants.API_BASE_URL}${product.merchant_logo}"
@@ -1321,135 +1373,180 @@ fun ProductDetailDialog(
                                         "${Constants.API_BASE_URL}/${product.merchant_logo}"
                                     }
                                     
-                                    AsyncImage(
-                                        model = ImageRequest.Builder(LocalContext.current)
-                                            .data(logoUrl)
-                                            .crossfade(true)
-                                            .build(),
-                                        contentDescription = "Mağaza logosu",
-                                        modifier = Modifier
-                                            .width(50.dp)
-                                            .height(30.dp)
-                                            .clip(RoundedCornerShape(4.dp))
-                                            .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(4.dp)),
-                                        contentScale = ContentScale.Fit
-                                    )
+                                    Card(
+                                        shape = RoundedCornerShape(8.dp),
+                                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                                    ) {
+                                        AsyncImage(
+                                            model = ImageRequest.Builder(LocalContext.current)
+                                                .data(logoUrl)
+                                                .crossfade(true)
+                                                .build(),
+                                            contentDescription = "Mağaza logosu",
+                                            modifier = Modifier
+                                                .width(50.dp)
+                                                .height(30.dp)
+                                                .padding(2.dp),
+                                            contentScale = ContentScale.Fit
+                                        )
+                                    }
                                 }
 
-                                // Miktar
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(SecondaryColor.copy(alpha = 0.1f))
-                                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                                // Modern Quantity Badge
+                                Card(
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = SecondaryColor.copy(alpha = 0.1f)
+                                    ),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                                 ) {
                                     Text(
                                         text = "${product.quantity} ${product.unit}",
                                         style = MaterialTheme.typography.bodyMedium,
                                         fontWeight = FontWeight.Bold,
-                                        color = SecondaryColor
+                                        color = SecondaryColor,
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                                     )
                                 }
                             }
 
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(20.dp))
 
+                            // Product Name
                             Text(
                                 text = product.name,
-                                style = MaterialTheme.typography.titleLarge,
+                                style = MaterialTheme.typography.headlineSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.onSurface,
+                                lineHeight = MaterialTheme.typography.headlineSmall.lineHeight
                             )
 
-                            Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(20.dp))
 
                             if (isLoadingDetails) {
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .height(100.dp),
+                                        .height(120.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    CircularProgressIndicator(color = PrimaryColor)
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        CircularProgressIndicator(
+                                            color = PrimaryColor,
+                                            strokeWidth = 3.dp,
+                                            modifier = Modifier.size(32.dp)
+                                        )
+                                        Text(
+                                            text = "Detaylar yükleniyor...",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = Color.Gray
+                                        )
+                                    }
                                 }
                             } else {
-                                // API'den gelen fiyat bilgileri
-                                Column(modifier = Modifier.fillMaxWidth()) {
-                                    // Fiyat bilgileri
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                        verticalAlignment = Alignment.Bottom
-                                    ) {
-                                        // Sol taraf: Birim fiyat
-                                        Column {
-                                            Text(
-                                                text = "Birim Fiyat",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = Color.Gray
-                                            )
-
-                                            Text(
-                                                text = "${product.unit_price} ₺",
-                                                style = MaterialTheme.typography.bodyLarge,
-                                                fontWeight = FontWeight.Medium
-                                            )
-                                        }
-
-                                        // Sağ taraf: Toplam fiyat
-                                        Column(horizontalAlignment = Alignment.End) {
-                                            Text(
-                                                text = "Toplam",
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = Color.Gray
-                                            )
-
-                                            Text(
-                                                text = "${product.price} ₺",
-                                                style = MaterialTheme.typography.headlineMedium,
-                                                fontWeight = FontWeight.Bold,
-                                                color = PrimaryColor
-                                            )
-                                        }
-                                    }
-                                    
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    
-                                    // Sepete ekle butonu (fiyatların altında, genişletilmiş)
-                                    ElevatedButton(
-                                        onClick = { 
-                                            Log.d("MarketScreen", "Detay ekranında SEPETE EKLE butonuna tıklandı: ${product.name}")
-                                            if (selectedOffer != null) {
-                                                viewModel.updateSelectedProductWithOffer(selectedOffer!!)
-                                            }
-                                            onAddToCart(viewModel.selectedProduct.value ?: product)
-                                        },
+                                // Modern Price Section
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
+                                    ),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                                ) {
+                                    Column(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .height(48.dp),
-                                        shape = RoundedCornerShape(8.dp),
-                                        colors = ButtonDefaults.elevatedButtonColors(
-                                            containerColor = PrimaryColor,
-                                            contentColor = Color.White
-                                        )
+                                            .padding(20.dp)
                                     ) {
                                         Row(
-                                            verticalAlignment = Alignment.CenterVertically,
-                                            horizontalArrangement = Arrangement.Center
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.SpaceBetween,
+                                            verticalAlignment = Alignment.Bottom
                                         ) {
-                                            Icon(
-                                                imageVector = Icons.Default.ShoppingCart,
-                                                contentDescription = "Sepete Ekle",
-                                                modifier = Modifier.size(20.dp)
+                                            // Unit Price
+                                            Column {
+                                                Text(
+                                                    text = "Birim Fiyat",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = Color.Gray,
+                                                    fontWeight = FontWeight.Medium
+                                                )
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Text(
+                                                    text = "${product.unit_price} ₺",
+                                                    style = MaterialTheme.typography.titleMedium,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.onSurface
+                                                )
+                                            }
+
+                                            // Total Price
+                                            Column(horizontalAlignment = Alignment.End) {
+                                                Text(
+                                                    text = "Toplam Fiyat",
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = Color.Gray,
+                                                    fontWeight = FontWeight.Medium
+                                                )
+                                                Spacer(modifier = Modifier.height(4.dp))
+                                                Text(
+                                                    text = "${product.price} ₺",
+                                                    style = MaterialTheme.typography.headlineMedium,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = PrimaryColor
+                                                )
+                                            }
+                                        }
+                                        
+                                        Spacer(modifier = Modifier.height(20.dp))
+                                        
+                                        // Modern Add to Cart Button
+                                        Card(
+                                            onClick = { 
+                                                Log.d("MarketScreen", "Detay ekranında SEPETE EKLE butonuna tıklandı: ${product.name}")
+                                                if (selectedOffer != null) {
+                                                    viewModel.updateSelectedProductWithOffer(selectedOffer!!)
+                                                }
+                                                onAddToCart(viewModel.selectedProduct.value ?: product)
+                                            },
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(56.dp),
+                                            shape = RoundedCornerShape(16.dp),
+                                            colors = CardDefaults.cardColors(
+                                                containerColor = PrimaryColor
+                                            ),
+                                            elevation = CardDefaults.cardElevation(
+                                                defaultElevation = 3.dp,
+                                                pressedElevation = 6.dp
                                             )
-                                            
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            
-                                            Text(
-                                                text = "SEPETE EKLE",
-                                                style = MaterialTheme.typography.bodyLarge,
-                                                fontWeight = FontWeight.Bold
-                                            )
+                                        ) {
+                                            Box(
+                                                modifier = Modifier.fillMaxSize(),
+                                                contentAlignment = Alignment.Center
+                                            ) {
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                                ) {
+                                                    Icon(
+                                                        imageVector = Icons.Default.ShoppingCart,
+                                                        contentDescription = "Sepete Ekle",
+                                                        tint = Color.White,
+                                                        modifier = Modifier.size(22.dp)
+                                                    )
+                                                    
+                                                    Text(
+                                                        text = "SEPETE EKLE",
+                                                        style = MaterialTheme.typography.titleMedium,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = Color.White
+                                                    )
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -1458,298 +1555,812 @@ fun ProductDetailDialog(
                     }
                 }
 
-                // Fiyat Geçmişi Bölümü
+                // Modern Price History Section
                 item {
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp)),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surface
-                        ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ModernExpandableCard(
+                        title = "Fiyat Geçmişi",
+                        subtitle = "Fiyat değişimlerini takip edin",
+                        icon = Icons.Default.TrendingUp,
+                        isExpanded = showPriceHistory,
+                        onToggle = { showPriceHistory = !showPriceHistory },
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
                     ) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp)
+                                .padding(top = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            // Başlık ve genişletme/daraltma butonu
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable { showPriceHistory = !showPriceHistory }
-                                    .padding(vertical = 4.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
+                            // Modern Time Range Selection
+                            LazyRow(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                contentPadding = PaddingValues(horizontal = 4.dp)
                             ) {
-                                Text(
-                                    text = "Fiyat Geçmişi",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold
-                                )
+                                items(TimeRange.values()) { range ->
+                                    Card(
+                                        onClick = { selectedTimeRange = range },
+                                        shape = RoundedCornerShape(20.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = if (selectedTimeRange == range) {
+                                                PrimaryColor
+                                            } else {
+                                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                                            }
+                                        ),
+                                        elevation = CardDefaults.cardElevation(
+                                            defaultElevation = if (selectedTimeRange == range) 4.dp else 0.dp
+                                        )
+                                    ) {
+                                        Text(
+                                            text = range.label,
+                                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            fontWeight = if (selectedTimeRange == range) FontWeight.Bold else FontWeight.Medium,
+                                            color = if (selectedTimeRange == range) {
+                                                Color.White
+                                            } else {
+                                                MaterialTheme.colorScheme.onSurfaceVariant
+                                            }
+                                        )
+                                    }
+                                }
                             }
 
-                            AnimatedVisibility(visible = showPriceHistory) {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 16.dp),
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                            // Price History Chart with Modern Container
+                            val currentProductDetails = productDetails
+                            if (currentProductDetails?.product?.price_history != null) {
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                                    ),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                                 ) {
-                                    // Zaman aralığı seçimi
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp)
                                     ) {
-                                        TimeRange.values().forEach { range ->
-                                            FilterChip(
-                                                selected = selectedTimeRange == range,
-                                                onClick = { selectedTimeRange = range },
-                                                label = { Text(range.label) },
-                                                colors = FilterChipDefaults.filterChipColors(
-                                                    selectedContainerColor = PrimaryColor,
-                                                    selectedLabelColor = Color.White
-                                                )
-                                            )
-                                        }
-                                    }
-
-                                    // Fiyat geçmişi grafiği
-                                    if (productDetails?.product?.price_history != null) {
                                         PriceHistoryChart(
-                                            priceHistory = productDetails!!.product.price_history,
+                                            priceHistory = currentProductDetails.product.price_history,
                                             timeRange = selectedTimeRange
                                         )
                                     }
                                 }
+                            } else {
+                                // No data available state
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
+                                    ),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(32.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.BarChart,
+                                            contentDescription = null,
+                                            tint = Color.Gray,
+                                            modifier = Modifier.size(32.dp)
+                                        )
+                                        Text(
+                                            text = "Fiyat geçmişi verisi henüz mevcut değil",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = Color.Gray,
+                                            textAlign = TextAlign.Center
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
                 }
 
-                // Satıcılar Bölümü
+                // Modern Offers Section
                 item {
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp)),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surface
-                        ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    ModernExpandableCard(
+                        title = "Diğer Satıcılar",
+                        subtitle = "${productDetails?.product?.offers?.size ?: 0} farklı mağaza",
+                        icon = Icons.Default.Store,
+                        isExpanded = showOffers,
+                        onToggle = { showOffers = !showOffers },
+                        modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
                     ) {
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(16.dp)
+                                .padding(top = 16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            // Başlık ve genişletme/daraltma butonu
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "Satıcılar (${productDetails?.product?.offers?.size ?: 0})",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 16.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                productDetails?.product?.offers?.forEach { offer ->
-                                    OfferCard(
+                            val currentProductDetails = productDetails
+                            if (currentProductDetails?.product?.offers?.isNotEmpty() == true) {
+                                currentProductDetails.product.offers.forEach { offer ->
+                                    ModernOfferCard(
                                         offer = offer,
                                         onAddToCart = {
                                             selectedOffer = offer
                                             viewModel.updateSelectedProductWithOffer(offer)
                                             onAddToCart(viewModel.selectedProduct.value ?: product)
                                         },
-                                        viewModel = viewModel,
                                         isSelected = selectedOffer == offer
                                     )
+                                }
+                            } else {
+                                // No offers available state
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f)
+                                    ),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(32.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Store,
+                                            contentDescription = null,
+                                            tint = Color.Gray,
+                                            modifier = Modifier.size(32.dp)
+                                        )
+                                        Text(
+                                            text = "Henüz başka satıcı bulunamadı",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = Color.Gray,
+                                            textAlign = TextAlign.Center
+                                        )
+                                    }
                                 }
                             }
                         }
                     }
                 }
                 
+                // Modern Price Prediction Section
                 item {
-                    Spacer(modifier = Modifier.height(16.dp))
-                    
-                    // Fiyat tahmini butonu
-                    ElevatedButton(
-                        onClick = { 
-                            viewModel.predictFuturePrice() 
-                        },
+                    Card(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(50.dp),
-                        colors = ButtonDefaults.elevatedButtonColors(
-                            containerColor = SecondaryColor,
-                            contentColor = Color.White
+                            .padding(horizontal = 20.dp, vertical = 8.dp),
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surface
                         ),
-                        shape = RoundedCornerShape(12.dp)
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
                     ) {
-                        Text(
-                            text = "Gelecek Fiyat Tahmini Yap",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                    
-                    // Fiyat tahmini sonuçları
-                    val pricePrediction by viewModel.pricePrediction.collectAsState()
-                    val isLoadingPrediction by viewModel.isLoadingPricePrediction.collectAsState()
-                    
-                    if (isLoadingPrediction) {
-                        Spacer(modifier = Modifier.height(16.dp))
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(top = 8.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                                .padding(20.dp),
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            CircularProgressIndicator(color = SecondaryColor)
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                text = "Fiyat tahminleri hesaplanıyor...",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color.Gray
-                            )
-                        }
-                    }
-                    
-                    pricePrediction?.let { prediction ->
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Card(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp)),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surface
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-                        ) {
-                            Column(
+                            // AI Prediction Header
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Card(
+                                    shape = CircleShape,
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = SecondaryColor.copy(alpha = 0.1f)
+                                    ),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                                    modifier = Modifier.size(40.dp)
+                                ) {
+                                    Box(
+                                        contentAlignment = Alignment.Center,
+                                        modifier = Modifier.fillMaxSize()
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.Psychology,
+                                            contentDescription = null,
+                                            tint = SecondaryColor,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
+                                }
+                                
+                                Column {
+                                    Text(
+                                        text = "AI Fiyat Tahmini",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = "Gelecek fiyat değişimlerini öğrenin",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color.Gray
+                                    )
+                                }
+                            }
+                            
+                            // Prediction Button
+                            Card(
+                                onClick = { viewModel.predictFuturePrice() },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(16.dp)
-                            ) {
-                                Text(
-                                    text = "Fiyat Tahminleri",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.Bold
+                                    .height(56.dp),
+                                shape = RoundedCornerShape(16.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = SecondaryColor
+                                ),
+                                elevation = CardDefaults.cardElevation(
+                                    defaultElevation = 2.dp,
+                                    pressedElevation = 4.dp
                                 )
-                                
-                                Spacer(modifier = Modifier.height(12.dp))
-                                
-                                if (prediction.errorMessage != null) {
-                                    // Hata mesajı
-                                    Text(
-                                        text = prediction.errorMessage,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        color = Color.Red
-                                    )
-                                } else {
-                                    // Tahmin sonuçları
+                            ) {
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
                                     Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                                     ) {
-                                        // 30 gün tahmini
-                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                            Text(
-                                                text = "30 Gün",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = Color.Gray
-                                            )
-                                            Text(
-                                                text = "${prediction.prediction30Days ?: "--"} ₺",
-                                                style = MaterialTheme.typography.bodyLarge,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (prediction.prediction30Days != null && 
-                                                            productDetails?.product?.offers?.firstOrNull()?.price ?: 0.0 < prediction.prediction30Days) {
-                                                    Color.Red
-                                                } else {
-                                                    Color.Green
-                                                }
-                                            )
-                                        }
-                                        
-                                        // 60 gün tahmini
-                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                            Text(
-                                                text = "60 Gün",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = Color.Gray
-                                            )
-                                            Text(
-                                                text = "${prediction.prediction60Days ?: "--"} ₺",
-                                                style = MaterialTheme.typography.bodyLarge,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (prediction.prediction60Days != null && 
-                                                            productDetails?.product?.offers?.firstOrNull()?.price ?: 0.0 < prediction.prediction60Days) {
-                                                    Color.Red
-                                                } else {
-                                                    Color.Green
-                                                }
-                                            )
-                                        }
-                                        
-                                        // 90 gün tahmini
-                                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                            Text(
-                                                text = "90 Gün",
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = Color.Gray
-                                            )
-                                            Text(
-                                                text = "${prediction.prediction90Days ?: "--"} ₺",
-                                                style = MaterialTheme.typography.bodyLarge,
-                                                fontWeight = FontWeight.Bold,
-                                                color = if (prediction.prediction90Days != null && 
-                                                            productDetails?.product?.offers?.firstOrNull()?.price ?: 0.0 < prediction.prediction90Days) {
-                                                    Color.Red
-                                                } else {
-                                                    Color.Green
-                                                }
-                                            )
-                                        }
+                                        Icon(
+                                            imageVector = Icons.Default.AutoAwesome,
+                                            contentDescription = null,
+                                            tint = Color.White,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Text(
+                                            text = "TAHMİN YAP",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color.White
+                                        )
                                     }
-                                    
-                                    Spacer(modifier = Modifier.height(16.dp))
-                                    
-                                    // Analiz
-                                    if (prediction.analysis != null) {
+                                }
+                            }
+                            
+                            // Prediction Results
+                            val pricePrediction by viewModel.pricePrediction.collectAsState()
+                            val isLoadingPrediction by viewModel.isLoadingPricePrediction.collectAsState()
+                            
+                            if (isLoadingPrediction) {
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                                    ),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(24.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        CircularProgressIndicator(
+                                            color = SecondaryColor,
+                                            strokeWidth = 3.dp,
+                                            modifier = Modifier.size(32.dp)
+                                        )
                                         Text(
-                                            text = "Analiz",
+                                            text = "AI tahmini hesaplanıyor...",
                                             style = MaterialTheme.typography.bodyMedium,
-                                            fontWeight = FontWeight.Bold
+                                            color = Color.Gray,
+                                            fontWeight = FontWeight.Medium
                                         )
-                                        Spacer(modifier = Modifier.height(4.dp))
-                                        Text(
-                                            text = prediction.analysis,
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = Color.DarkGray
-                                        )
+                                    }
+                                }
+                            }
+                            
+                            pricePrediction?.let { prediction ->
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = if (prediction.errorMessage != null) {
+                                            MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f)
+                                        } else {
+                                            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
+                                        }
+                                    ),
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(20.dp),
+                                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                                    ) {
+                                        if (prediction.errorMessage != null) {
+                                            // Error State
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.Error,
+                                                    contentDescription = null,
+                                                    tint = MaterialTheme.colorScheme.error,
+                                                    modifier = Modifier.size(20.dp)
+                                                )
+                                                Text(
+                                                    text = prediction.errorMessage,
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    color = MaterialTheme.colorScheme.error,
+                                                    fontWeight = FontWeight.Medium
+                                                )
+                                            }
+                                        } else {
+                                            // Success State - Prediction Results
+                                            Text(
+                                                text = "Fiyat Tahminleri",
+                                                style = MaterialTheme.typography.titleMedium,
+                                                fontWeight = FontWeight.Bold,
+                                                color = MaterialTheme.colorScheme.onSurface
+                                            )
+                                            
+                                            // Prediction Cards
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                            ) {
+                                                val currentPrice = productDetails?.product?.offers?.firstOrNull()?.price ?: 0.0
+                                                
+                                                // 30 Days
+                                                PredictionTimeCard(
+                                                    period = "30 Gün",
+                                                    price = prediction.prediction30Days,
+                                                    currentPrice = currentPrice,
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                                
+                                                // 60 Days
+                                                PredictionTimeCard(
+                                                    period = "60 Gün",
+                                                    price = prediction.prediction60Days,
+                                                    currentPrice = currentPrice,
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                                
+                                                // 90 Days
+                                                PredictionTimeCard(
+                                                    period = "90 Gün",
+                                                    price = prediction.prediction90Days,
+                                                    currentPrice = currentPrice,
+                                                    modifier = Modifier.weight(1f)
+                                                )
+                                            }
+                                            
+                                            // Analysis
+                                            if (prediction.analysis != null) {
+                                                Card(
+                                                    modifier = Modifier.fillMaxWidth(),
+                                                    shape = RoundedCornerShape(12.dp),
+                                                    colors = CardDefaults.cardColors(
+                                                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                                                    ),
+                                                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                                                ) {
+                                                    Column(
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .padding(16.dp),
+                                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                                    ) {
+                                                        Row(
+                                                            verticalAlignment = Alignment.CenterVertically,
+                                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                        ) {
+                                                            Icon(
+                                                                imageVector = Icons.Default.Insights,
+                                                                contentDescription = null,
+                                                                tint = SecondaryColor,
+                                                                modifier = Modifier.size(18.dp)
+                                                            )
+                                                            Text(
+                                                                text = "AI Analizi",
+                                                                style = MaterialTheme.typography.bodyMedium,
+                                                                fontWeight = FontWeight.Bold,
+                                                                color = MaterialTheme.colorScheme.onSurface
+                                                            )
+                                                        }
+                                                        Text(
+                                                            text = prediction.analysis,
+                                                            style = MaterialTheme.typography.bodySmall,
+                                                            color = Color.DarkGray,
+                                                            lineHeight = 20.sp
+                                                        )
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
                                 }
                             }
                         }
                     }
+                }
+                
+                // Bottom Padding
+                item {
+                    Spacer(modifier = Modifier.height(20.dp))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ModernExpandableCard(
+    title: String,
+    subtitle: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    isExpanded: Boolean,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            // Header
+            Card(
+                onClick = onToggle,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(
+                    topStart = 20.dp,
+                    topEnd = 20.dp,
+                    bottomStart = if (isExpanded) 0.dp else 20.dp,
+                    bottomEnd = if (isExpanded) 0.dp else 20.dp
+                ),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Card(
+                            shape = CircleShape,
+                            colors = CardDefaults.cardColors(
+                                containerColor = PrimaryColor.copy(alpha = 0.1f)
+                            ),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                Icon(
+                                    imageVector = icon,
+                                    contentDescription = null,
+                                    tint = PrimaryColor,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                        
+                        Column {
+                            Text(
+                                text = title,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = subtitle,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.Gray
+                            )
+                        }
+                    }
+                    
+                    Card(
+                        shape = CircleShape,
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Icon(
+                                imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = if (isExpanded) "Daralt" else "Genişlet",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    }
+                }
+            }
+            
+            // Content
+            AnimatedVisibility(visible = isExpanded) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp)
+                ) {
+                    content()
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ModernOfferCard(
+    offer: Offer,
+    onAddToCart: () -> Unit,
+    isSelected: Boolean = false,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        onClick = onAddToCart,
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) {
+                PrimaryColor.copy(alpha = 0.1f)
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            }
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = if (isSelected) 2.dp else 1.dp,
+            pressedElevation = 3.dp
+        ),
+        border = if (isSelected) {
+            androidx.compose.foundation.BorderStroke(2.dp, PrimaryColor.copy(alpha = 0.5f))
+        } else null
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Store Info
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                // Store Logo
+                Card(
+                    shape = RoundedCornerShape(8.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    AsyncImage(
+                        model = ImageRequest.Builder(LocalContext.current)
+                            .data(
+                                if (offer.merchant_logo.startsWith("/")) {
+                                    "${Constants.API_BASE_URL}${offer.merchant_logo}"
+                                } else {
+                                    "${Constants.API_BASE_URL}/${offer.merchant_logo}"
+                                }
+                            )
+                            .crossfade(true)
+                            .build(),
+                        contentDescription = offer.merchant_name,
+                        modifier = Modifier
+                            .width(50.dp)
+                            .height(32.dp)
+                            .padding(2.dp),
+                        contentScale = ContentScale.Fit
+                    )
+                }
+                
+                // Store Name
+                Column {
+                    Text(
+                        text = offer.merchant_name,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    if (isSelected) {
+                        Text(
+                            text = "Seçili",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = PrimaryColor,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+            
+            // Price and Action
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Price
+                Card(
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isSelected) {
+                            PrimaryColor.copy(alpha = 0.1f)
+                        } else {
+                            MaterialTheme.colorScheme.surface
+                        }
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                ) {
+                    Text(
+                        text = "₺${String.format("%.2f", offer.price)}",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = PrimaryColor,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                    )
+                }
+                
+                // Action Icon
+                if (isSelected) {
+                    Card(
+                        shape = CircleShape,
+                        colors = CardDefaults.cardColors(
+                            containerColor = PrimaryColor
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Check,
+                                contentDescription = "Seçili",
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                } else {
+                    Card(
+                        shape = CircleShape,
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceVariant
+                        ),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ShoppingCart,
+                                contentDescription = "Sepete Ekle",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun PredictionTimeCard(
+    period: String,
+    price: Double?,
+    currentPrice: Double,
+    modifier: Modifier = Modifier
+) {
+    val isIncrease = price != null && price > currentPrice
+    val isDecrease = price != null && price < currentPrice
+    
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = when {
+                isIncrease -> Color.Red.copy(alpha = 0.1f)
+                isDecrease -> Color.Green.copy(alpha = 0.1f)
+                else -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+            }
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = period,
+                style = MaterialTheme.typography.bodySmall,
+                color = Color.Gray,
+                fontWeight = FontWeight.Medium
+            )
+            
+            Text(
+                text = if (price != null) "₺${String.format("%.2f", price)}" else "--",
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold,
+                color = when {
+                    isIncrease -> Color.Red
+                    isDecrease -> Color.Green
+                    else -> MaterialTheme.colorScheme.onSurface
+                }
+            )
+            
+            if (price != null) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Icon(
+                        imageVector = when {
+                            isIncrease -> Icons.Default.TrendingUp
+                            isDecrease -> Icons.Default.TrendingDown
+                            else -> Icons.Default.TrendingFlat
+                        },
+                        contentDescription = null,
+                        tint = when {
+                            isIncrease -> Color.Red
+                            isDecrease -> Color.Green
+                            else -> Color.Gray
+                        },
+                        modifier = Modifier.size(12.dp)
+                    )
+                    
+                    val percentChange = if (currentPrice > 0) {
+                        ((price - currentPrice) / currentPrice) * 100
+                    } else 0.0
+                    
+                    Text(
+                        text = "${if (percentChange > 0) "+" else ""}${String.format("%.1f", percentChange)}%",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = when {
+                            isIncrease -> Color.Red
+                            isDecrease -> Color.Green
+                            else -> Color.Gray
+                        },
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
         }
