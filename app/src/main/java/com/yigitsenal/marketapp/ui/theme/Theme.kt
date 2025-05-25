@@ -19,27 +19,33 @@ import androidx.core.view.WindowCompat
 private val LightColorScheme = lightColorScheme(
     primary = PrimaryColor,
     secondary = SecondaryColor,
-    background = Color.White,
-    surface = Color.White,
+    tertiary = SecondaryLightColor,
+    background = LightBackground,
+    surface = LightSurface,
     onPrimary = Color.White,
     onSecondary = Color.White,
+    onTertiary = Color.White,
     onBackground = Color.Black,
     onSurface = Color.Black,
-    surfaceVariant = Color(0xFFF5F5F5),
-    onSurfaceVariant = Color.Gray
+    surfaceVariant = LightSurfaceVariant,
+    onSurfaceVariant = LightOnSurfaceVariant,
+    outline = Color(0xFFAAAAAA)
 )
 
 private val DarkColorScheme = darkColorScheme(
-    primary = PrimaryColor,
-    secondary = SecondaryColor,
-    background = Color(0xFF121212),
-    surface = Color(0xFF1E1E1E),
-    onPrimary = Color.White,
-    onSecondary = Color.White,
+    primary = PrimaryLightColor,
+    secondary = SecondaryLightColor,
+    tertiary = SecondaryLightColor,
+    background = DarkBackground,
+    surface = DarkSurface,
+    onPrimary = Color.Black,
+    onSecondary = Color.Black,
+    onTertiary = Color.Black,
     onBackground = Color.White,
     onSurface = Color.White,
-    surfaceVariant = Color(0xFF2D2D2D),
-    onSurfaceVariant = Color(0xFFB0B0B0)
+    surfaceVariant = DarkSurfaceVariant,
+    onSurfaceVariant = DarkOnSurfaceVariant,
+    outline = Color(0xFF8A8A8A)
 )
 
 @Composable
@@ -61,7 +67,13 @@ fun MarketAppTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
-            window.statusBarColor = colorScheme.primary.toArgb()
+            // Use a darker status bar color in dark mode for better contrast
+            window.statusBarColor = if (darkTheme) {
+                Color(0xFF000000).toArgb() // Pure black for dark mode
+            } else {
+                colorScheme.primary.toArgb() // Primary color for light mode
+            }
+            // Set the status bar icons to be visible based on theme
             WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
         }
     }

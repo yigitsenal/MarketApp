@@ -10,6 +10,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -114,7 +115,12 @@ import com.yigitsenal.marketapp.data.model.ProductDetailResponse
 import com.yigitsenal.marketapp.ui.component.PriceHistoryChart
 import com.yigitsenal.marketapp.ui.component.TimeRange
 import com.yigitsenal.marketapp.ui.theme.PrimaryColor
+import com.yigitsenal.marketapp.ui.theme.PrimaryLightColor
 import com.yigitsenal.marketapp.ui.theme.SecondaryColor
+import com.yigitsenal.marketapp.ui.theme.adaptiveSurfaceVariant
+import com.yigitsenal.marketapp.ui.theme.cardContainerColor
+import com.yigitsenal.marketapp.ui.theme.themeAwareElevation
+import com.yigitsenal.marketapp.ui.theme.themeAwareShadow
 import com.yigitsenal.marketapp.ui.viewmodel.MarketUiState
 import com.yigitsenal.marketapp.ui.viewmodel.MarketViewModel
 import com.yigitsenal.marketapp.ui.viewmodel.ShoppingListViewModel
@@ -998,7 +1004,7 @@ fun ProductCard(
                                     .height(18.dp)
                                     .width(40.dp),
                                 shape = RoundedCornerShape(4.dp),
-                                colors = CardDefaults.cardColors(containerColor = Color.White),
+                                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                             ) {
                                 AsyncImage(
@@ -1208,11 +1214,10 @@ fun ProductDetailDialog(
             modifier = Modifier
                 .fillMaxWidth(0.96f)
                 .fillMaxHeight(0.9f)
-                .shadow(
-                    elevation = 8.dp, 
+                .themeAwareShadow(
+                    elevation = themeAwareElevation(lightElevation = 6.dp, darkElevation = 4.dp),
                     shape = RoundedCornerShape(24.dp),
-                    ambientColor = PrimaryColor.copy(alpha = 0.05f),
-                    spotColor = PrimaryColor.copy(alpha = 0.08f)
+                    clip = true
                 ),
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(
@@ -1255,7 +1260,7 @@ fun ProductDetailDialog(
                                 Text(
                                     text = "Fiyat karşılaştırması ve geçmişi",
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = Color.White.copy(alpha = 0.8f)
+                                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
                                 )
                             }
 
@@ -1264,7 +1269,7 @@ fun ProductDetailDialog(
                                 modifier = Modifier.size(44.dp),
                                 shape = CircleShape,
                                 colors = CardDefaults.cardColors(
-                                    containerColor = Color.White.copy(alpha = 0.2f)
+                                    containerColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.2f)
                                 ),
                                 elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                             ) {
@@ -1375,7 +1380,7 @@ fun ProductDetailDialog(
                                     
                                     Card(
                                         shape = RoundedCornerShape(8.dp),
-                                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                                        elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp)
                                     ) {
                                         AsyncImage(
                                             model = ImageRequest.Builder(LocalContext.current)
@@ -1535,7 +1540,7 @@ fun ProductDetailDialog(
                                                     Icon(
                                                         imageVector = Icons.Default.ShoppingCart,
                                                         contentDescription = "Sepete Ekle",
-                                                        tint = Color.White,
+                                                        tint = MaterialTheme.colorScheme.onPrimary,
                                                         modifier = Modifier.size(22.dp)
                                                     )
                                                     
@@ -1543,7 +1548,7 @@ fun ProductDetailDialog(
                                                         text = "SEPETE EKLE",
                                                         style = MaterialTheme.typography.titleMedium,
                                                         fontWeight = FontWeight.Bold,
-                                                        color = Color.White
+                                                        color = MaterialTheme.colorScheme.onPrimary
                                                     )
                                                 }
                                             }
@@ -1598,7 +1603,7 @@ fun ProductDetailDialog(
                                             style = MaterialTheme.typography.bodyMedium,
                                             fontWeight = if (selectedTimeRange == range) FontWeight.Bold else FontWeight.Medium,
                                             color = if (selectedTimeRange == range) {
-                                                Color.White
+                                                MaterialTheme.colorScheme.onPrimary
                                             } else {
                                                 MaterialTheme.colorScheme.onSurfaceVariant
                                             }
@@ -1616,7 +1621,7 @@ fun ProductDetailDialog(
                                     colors = CardDefaults.cardColors(
                                         containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
                                     ),
-                                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                                    elevation = CardDefaults.cardElevation(defaultElevation = 0.5.dp)
                                 ) {
                                     Box(
                                         modifier = Modifier
@@ -2129,23 +2134,43 @@ fun ModernOfferCard(
     isSelected: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    // Use theme-aware colors for better dark mode compatibility
+    val containerColor = if (isSelected) {
+        if (isSystemInDarkTheme()) {
+            PrimaryLightColor.copy(alpha = 0.15f)
+        } else {
+            PrimaryColor.copy(alpha = 0.1f)
+        }
+    } else {
+        adaptiveSurfaceVariant(alpha = 0.3f)
+    }
+    
+    val borderColor = if (isSystemInDarkTheme()) {
+        PrimaryLightColor.copy(alpha = 0.6f)
+    } else {
+        PrimaryColor.copy(alpha = 0.5f)
+    }
+    
     Card(
         onClick = onAddToCart,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .themeAwareShadow(
+                elevation = themeAwareElevation(
+                    lightElevation = if (isSelected) 1.dp else 0.5.dp,
+                    darkElevation = if (isSelected) 0.5.dp else 0.dp
+                ),
+                shape = RoundedCornerShape(16.dp),
+                clip = true
+            ),
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) {
-                PrimaryColor.copy(alpha = 0.1f)
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-            }
-        ),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isSelected) 2.dp else 1.dp,
-            pressedElevation = 3.dp
+            defaultElevation = 0.dp, // Shadow is handled by themeAwareShadow
+            pressedElevation = 0.dp
         ),
         border = if (isSelected) {
-            androidx.compose.foundation.BorderStroke(2.dp, PrimaryColor.copy(alpha = 0.5f))
+            androidx.compose.foundation.BorderStroke(2.dp, borderColor)
         } else null
     ) {
         Row(
@@ -2164,7 +2189,12 @@ fun ModernOfferCard(
                 // Store Logo
                 Card(
                     shape = RoundedCornerShape(8.dp),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                    colors = CardDefaults.cardColors(
+                        containerColor = cardContainerColor()
+                    ),
+                    elevation = CardDefaults.cardElevation(
+                        defaultElevation = themeAwareElevation(lightElevation = 0.5.dp, darkElevation = 0.dp)
+                    )
                 ) {
                     AsyncImage(
                         model = ImageRequest.Builder(LocalContext.current)
@@ -2198,7 +2228,7 @@ fun ModernOfferCard(
                         Text(
                             text = "Seçili",
                             style = MaterialTheme.typography.bodySmall,
-                            color = PrimaryColor,
+                            color = if (isSystemInDarkTheme()) PrimaryLightColor else PrimaryColor,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -2215,9 +2245,13 @@ fun ModernOfferCard(
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(
                         containerColor = if (isSelected) {
-                            PrimaryColor.copy(alpha = 0.1f)
+                            if (isSystemInDarkTheme()) {
+                                PrimaryLightColor.copy(alpha = 0.15f)
+                            } else {
+                                PrimaryColor.copy(alpha = 0.1f)
+                            }
                         } else {
-                            MaterialTheme.colorScheme.surface
+                            cardContainerColor()
                         }
                     ),
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
@@ -2226,7 +2260,7 @@ fun ModernOfferCard(
                         text = "₺${String.format("%.2f", offer.price)}",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = PrimaryColor,
+                        color = if (isSystemInDarkTheme()) PrimaryLightColor else PrimaryColor,
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
                     )
                 }
@@ -2236,9 +2270,11 @@ fun ModernOfferCard(
                     Card(
                         shape = CircleShape,
                         colors = CardDefaults.cardColors(
-                            containerColor = PrimaryColor
+                            containerColor = if (isSystemInDarkTheme()) PrimaryLightColor else PrimaryColor
                         ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                        elevation = CardDefaults.cardElevation(
+                            defaultElevation = themeAwareElevation(lightElevation = 1.dp, darkElevation = 0.5.dp)
+                        ),
                         modifier = Modifier.size(32.dp)
                     ) {
                         Box(

@@ -104,7 +104,7 @@ class MainActivity : ComponentActivity(), ImageLoaderFactory {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-
+        // Get the AppContainer from the Application
         val appContainer = (application as MarketApplication).container
         marketViewModelFactory = appContainer.marketViewModelFactory
         shoppingListViewModelFactory = appContainer.shoppingListViewModelFactory
@@ -112,13 +112,12 @@ class MainActivity : ComponentActivity(), ImageLoaderFactory {
 
         setContent {
             val systemInDarkTheme = isSystemInDarkTheme()
-            MarketAppTheme(
-                darkTheme = systemInDarkTheme,
-                dynamicColor = true
-            ) {
-                val marketViewModel = ViewModelProvider(this, marketViewModelFactory)[MarketViewModel::class.java]
-                val shoppingListViewModel = ViewModelProvider(this, shoppingListViewModelFactory)[ShoppingListViewModel::class.java]
-                val cartOptimizationViewModel = ViewModelProvider(this, cartOptimizationViewModelFactory)[CartOptimizationViewModel::class.java]
+            
+            // Apply theme with proper dark mode support
+            MarketAppTheme(darkTheme = systemInDarkTheme) {
+                marketViewModel = ViewModelProvider(this, marketViewModelFactory)[MarketViewModel::class.java]
+                shoppingListViewModel = ViewModelProvider(this, shoppingListViewModelFactory)[ShoppingListViewModel::class.java]
+                cartOptimizationViewModel = ViewModelProvider(this, cartOptimizationViewModelFactory)[CartOptimizationViewModel::class.java]
 
                 // Otomatik optimizasyon için callback kurulumu
                 shoppingListViewModel.setOnListChangedCallback { listId ->
@@ -127,11 +126,16 @@ class MainActivity : ComponentActivity(), ImageLoaderFactory {
                     }
                 }
 
-                MainScreen(
-                    marketViewModel = marketViewModel,
-                    shoppingListViewModel = shoppingListViewModel,
-                    cartOptimizationViewModel = cartOptimizationViewModel
-                )
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    MainScreen(
+                        marketViewModel = marketViewModel,
+                        shoppingListViewModel = shoppingListViewModel,
+                        cartOptimizationViewModel = cartOptimizationViewModel
+                    )
+                }
             }
         }
     }
