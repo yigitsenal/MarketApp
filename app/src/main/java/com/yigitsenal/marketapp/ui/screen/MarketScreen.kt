@@ -120,7 +120,7 @@ fun MarketScreen(
     val searchText by viewModel.newItemText.collectAsState()
     val selectedProduct by viewModel.selectedProduct.collectAsState()
     val currentSort by viewModel.sortOption.collectAsState()
-    
+
     // Compose'da yan etki - kullanıcı bu ekrana geldiğinde mevcut aramaları ve detayları temizle
     LaunchedEffect(key1 = Unit) {
         viewModel.updateNewItemText("")
@@ -180,7 +180,7 @@ fun MarketScreen(
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
-                        
+
                         IconButton(
                             onClick = { showSortDialog = false },
                             modifier = Modifier
@@ -195,19 +195,19 @@ fun MarketScreen(
                             )
                         }
                     }
-                    
+
                     Divider(
                         modifier = Modifier.padding(vertical = 4.dp),
                         color = MaterialTheme.colorScheme.outline
                     )
-                    
+
                     Text(
                         text = "Ürünleri Sırala",
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    
+
                     // Filtre seçenekleri
                     Card(
                         modifier = Modifier
@@ -249,7 +249,7 @@ fun MarketScreen(
                                     fontWeight = if (currentSort == "price-asc") FontWeight.Bold else FontWeight.Normal,
                                     color = if (currentSort == "price-asc") PrimaryColor else MaterialTheme.colorScheme.onSurface
                                 )
-                                
+
                                 if (currentSort == "price-asc") {
                                     Icon(
                                         Icons.Default.KeyboardArrowDown,
@@ -259,9 +259,9 @@ fun MarketScreen(
                                     )
                                 }
                             }
-                            
+
                             Divider(color = Color(0xFFF0F0F0))
-                            
+
                             // En Düşük Birim Fiyat seçeneği
                             Row(
                                 modifier = Modifier
@@ -287,7 +287,7 @@ fun MarketScreen(
                                     fontWeight = if (currentSort == "specUnit-asc") FontWeight.Bold else FontWeight.Normal,
                                     color = if (currentSort == "specUnit-asc") PrimaryColor else MaterialTheme.colorScheme.onSurface
                                 )
-                                
+
                                 if (currentSort == "specUnit-asc") {
                                     Icon(
                                         Icons.Default.KeyboardArrowDown,
@@ -297,11 +297,11 @@ fun MarketScreen(
                                     )
                                 }
                             }
-                            
+
                             // Eğer aktif bir sıralama varsa Sıralamayı Kaldır seçeneği göster
                             if (currentSort != null) {
                                 Divider(color = Color(0xFFF0F0F0))
-                                
+
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -321,9 +321,9 @@ fun MarketScreen(
                             }
                         }
                     }
-                    
+
                     Spacer(modifier = Modifier.height(8.dp))
-                    
+
                     // Kapat butonu
                     Box(
                         modifier = Modifier.fillMaxWidth(),
@@ -417,14 +417,14 @@ fun MarketScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
-                           if (searchText.isNotEmpty()) {
+                            if (searchText.isNotEmpty()) {
                                 Text(
                                     text = "${searchText} arama sonuçları",
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
-                            
+
                             // Başlık altında ürün sayısı
                             Text(
                                 text = when (val currentState = uiState) {
@@ -435,7 +435,7 @@ fun MarketScreen(
                                 color = Color.Gray
                             )
                         }
-                        
+
                         // Filtrele butonu
                         Box(
                             modifier = Modifier
@@ -568,11 +568,11 @@ fun ProductCard(
 ) {
     // Ürünün kendi satıcı sayısını al
     val offerCount = product.offer_count
-    
+
     // Ürün miktarını takip etmek için state
     val activeListItems by shoppingListViewModel.activeListItems.collectAsState()
-    val quantity = activeListItems.find { item -> 
-        item.name == product.name && item.merchantId == product.merchant_id 
+    val quantity = activeListItems.find { item ->
+        item.name == product.name && item.merchantId == product.merchant_id
     }?.quantity?.toInt() ?: 0
 
     Card(
@@ -645,7 +645,7 @@ fun ProductCard(
                             .border(0.5.dp, Color(0xFFEEEEEE), RoundedCornerShape(4.dp)),
                         contentScale = ContentScale.Fit
                     )
-                    
+
                     // Satıcı sayısı - Görseldeki gibi belirgin şekilde
                     if (offerCount > 0) {
                         Spacer(modifier = Modifier.width(6.dp))
@@ -757,7 +757,7 @@ fun QuantityControl(
                         shoppingListViewModel.decreaseItemQuantity(product)
                     }
             )
-            
+
             // Miktar
             Text(
                 text = quantity.toString(),
@@ -765,7 +765,7 @@ fun QuantityControl(
                 color = Color.White,
                 fontWeight = FontWeight.Bold
             )
-            
+
             // Arttırma butonu
             Icon(
                 Icons.Default.Add,
@@ -940,7 +940,7 @@ fun ProductDetailDialog(
                                     } else {
                                         "${Constants.API_BASE_URL}/${product.merchant_logo}"
                                     }
-                                    
+
                                     AsyncImage(
                                         model = ImageRequest.Builder(LocalContext.current)
                                             .data(logoUrl)
@@ -1032,12 +1032,12 @@ fun ProductDetailDialog(
                                             )
                                         }
                                     }
-                                    
+
                                     Spacer(modifier = Modifier.height(16.dp))
-                                    
+
                                     // Sepete ekle butonu (fiyatların altında, genişletilmiş)
                                     ElevatedButton(
-                                        onClick = { 
+                                        onClick = {
                                             Log.d("MarketScreen", "Detay ekranında SEPETE EKLE butonuna tıklandı: ${product.name}")
                                             if (selectedOffer != null) {
                                                 viewModel.updateSelectedProductWithOffer(selectedOffer!!)
@@ -1062,9 +1062,9 @@ fun ProductDetailDialog(
                                                 contentDescription = "Sepete Ekle",
                                                 modifier = Modifier.size(20.dp)
                                             )
-                                            
+
                                             Spacer(modifier = Modifier.width(8.dp))
-                                            
+
                                             Text(
                                                 text = "SEPETE EKLE",
                                                 style = MaterialTheme.typography.bodyLarge,
@@ -1205,14 +1205,14 @@ fun ProductDetailDialog(
                         }
                     }
                 }
-                
+
                 item {
                     Spacer(modifier = Modifier.height(16.dp))
-                    
+
                     // Fiyat tahmini butonu
                     ElevatedButton(
-                        onClick = { 
-                            viewModel.predictFuturePrice() 
+                        onClick = {
+                            viewModel.predictFuturePrice()
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -1229,11 +1229,11 @@ fun ProductDetailDialog(
                             fontWeight = FontWeight.Bold
                         )
                     }
-                    
+
                     // Fiyat tahmini sonuçları
                     val pricePrediction by viewModel.pricePrediction.collectAsState()
                     val isLoadingPrediction by viewModel.isLoadingPricePrediction.collectAsState()
-                    
+
                     if (isLoadingPrediction) {
                         Spacer(modifier = Modifier.height(16.dp))
                         Column(
@@ -1251,7 +1251,7 @@ fun ProductDetailDialog(
                             )
                         }
                     }
-                    
+
                     pricePrediction?.let { prediction ->
                         Spacer(modifier = Modifier.height(16.dp))
                         Card(
@@ -1273,9 +1273,9 @@ fun ProductDetailDialog(
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.Bold
                                 )
-                                
+
                                 Spacer(modifier = Modifier.height(12.dp))
-                                
+
                                 if (prediction.errorMessage != null) {
                                     // Hata mesajı
                                     Text(
@@ -1300,15 +1300,15 @@ fun ProductDetailDialog(
                                                 text = "${prediction.prediction30Days ?: "--"} ₺",
                                                 style = MaterialTheme.typography.bodyLarge,
                                                 fontWeight = FontWeight.Bold,
-                                                color = if (prediction.prediction30Days != null && 
-                                                            productDetails?.product?.offers?.firstOrNull()?.price ?: 0.0 < prediction.prediction30Days) {
+                                                color = if (prediction.prediction30Days != null &&
+                                                    productDetails?.product?.offers?.firstOrNull()?.price ?: 0.0 < prediction.prediction30Days) {
                                                     Color.Red
                                                 } else {
                                                     Color.Green
                                                 }
                                             )
                                         }
-                                        
+
                                         // 60 gün tahmini
                                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                             Text(
@@ -1320,15 +1320,15 @@ fun ProductDetailDialog(
                                                 text = "${prediction.prediction60Days ?: "--"} ₺",
                                                 style = MaterialTheme.typography.bodyLarge,
                                                 fontWeight = FontWeight.Bold,
-                                                color = if (prediction.prediction60Days != null && 
-                                                            productDetails?.product?.offers?.firstOrNull()?.price ?: 0.0 < prediction.prediction60Days) {
+                                                color = if (prediction.prediction60Days != null &&
+                                                    productDetails?.product?.offers?.firstOrNull()?.price ?: 0.0 < prediction.prediction60Days) {
                                                     Color.Red
                                                 } else {
                                                     Color.Green
                                                 }
                                             )
                                         }
-                                        
+
                                         // 90 gün tahmini
                                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                             Text(
@@ -1340,8 +1340,8 @@ fun ProductDetailDialog(
                                                 text = "${prediction.prediction90Days ?: "--"} ₺",
                                                 style = MaterialTheme.typography.bodyLarge,
                                                 fontWeight = FontWeight.Bold,
-                                                color = if (prediction.prediction90Days != null && 
-                                                            productDetails?.product?.offers?.firstOrNull()?.price ?: 0.0 < prediction.prediction90Days) {
+                                                color = if (prediction.prediction90Days != null &&
+                                                    productDetails?.product?.offers?.firstOrNull()?.price ?: 0.0 < prediction.prediction90Days) {
                                                     Color.Red
                                                 } else {
                                                     Color.Green
@@ -1349,9 +1349,9 @@ fun ProductDetailDialog(
                                             )
                                         }
                                     }
-                                    
+
                                     Spacer(modifier = Modifier.height(16.dp))
-                                    
+
                                     // Analiz
                                     if (prediction.analysis != null) {
                                         Text(
@@ -1389,9 +1389,9 @@ fun OfferCard(
             .fillMaxWidth()
             .padding(vertical = 4.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) 
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) 
-            else 
+            containerColor = if (isSelected)
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+            else
                 MaterialTheme.colorScheme.surface
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
@@ -1429,7 +1429,7 @@ fun OfferCard(
                         .border(1.dp, Color(0xFFEEEEEE), RoundedCornerShape(6.dp)),
                     contentScale = ContentScale.Fit
                 )
-                
+
                 // Mağaza adı
                 Text(
                     text = offer.merchant_name,
@@ -1437,7 +1437,7 @@ fun OfferCard(
                     fontWeight = FontWeight.Medium
                 )
             }
-            
+
             // Fiyat ve sepete ekle butonu
             Row(
                 verticalAlignment = Alignment.CenterVertically,

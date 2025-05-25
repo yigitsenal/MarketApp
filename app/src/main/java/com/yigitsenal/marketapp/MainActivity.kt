@@ -71,6 +71,7 @@ import coil.request.CachePolicy
 import coil.util.DebugLogger
 import com.yigitsenal.marketapp.data.model.ShoppingList
 import com.yigitsenal.marketapp.data.model.ShoppingListItem
+import com.yigitsenal.marketapp.ui.screen.HomeScreen
 import com.yigitsenal.marketapp.ui.screen.MarketScreen
 import com.yigitsenal.marketapp.ui.screen.ShoppingListScreen
 import com.yigitsenal.marketapp.ui.theme.MarketAppTheme
@@ -83,6 +84,13 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.material.icons.filled.Analytics
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Brush
 
 @OptIn(ExperimentalCoilApi::class)
 class MainActivity : ComponentActivity(), ImageLoaderFactory {
@@ -222,228 +230,33 @@ fun MainScreen(
             when (currentScreen) {
                 Screen.HOME -> {
                     val allLists by shoppingListViewModel.allShoppingLists.collectAsState()
-                    val completedLists = allLists.filter { it.isCompleted }
-
-                    if (completedLists.isEmpty()) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 24.dp, vertical = 32.dp),
-                            verticalArrangement = Arrangement.Center,
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-
-                            Card(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(bottom = 32.dp),
-                                colors = CardDefaults.cardColors(
-                                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                                ),
-                                shape = RoundedCornerShape(24.dp)
-                            ) {
-                                Column(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(32.dp),
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.CheckCircle,
-                                        contentDescription = "No completed lists",
-                                        modifier = Modifier
-                                            .size(80.dp)
-                                            .padding(bottom = 16.dp),
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                    Text(
-                                        text = "Henüz tamamlanmış bir alışveriş listeniz yok",
-                                        style = MaterialTheme.typography.headlineSmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        textAlign = TextAlign.Center,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text(
-                                        text = "Bir listeyi tamamladığınızda burada görünecektir",
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                        textAlign = TextAlign.Center
-                                    )
-                                }
-                            }
-
-                            // Alışverişe başla butonu
-                            Button(
-                                onClick = { currentScreen = Screen.SEARCH },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(56.dp),
-                                shape = RoundedCornerShape(16.dp),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = MaterialTheme.colorScheme.primary,
-                                    contentColor = MaterialTheme.colorScheme.onPrimary
-                                )
-                            ) {
-                                Row(
-                                    horizontalArrangement = Arrangement.Center,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.ShoppingCart,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(24.dp)
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = "Alışverişe Başla",
-                                        style = MaterialTheme.typography.titleMedium,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
+                    
+                    HomeScreen(
+                        allLists = allLists,
+                        onNavigateToSearch = { currentScreen = Screen.SEARCH },
+                        onNavigateToCart = { currentScreen = Screen.CART },
+                        onListClick = { list ->
+                            if (list.isCompleted) {
+                                selectedCompletedList = list
+                                showCompletedListDialog = true
+                            } else {
+                                // Navigate to active list (cart)
+                                shoppingListViewModel.setActiveShoppingList(list)
+                                currentScreen = Screen.CART
                             }
                         }
-                    } else {
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            item {
-                                // Başlık ve özet kartı
-                                Column(
-                                    modifier = Modifier.padding(vertical = 8.dp)
-                                ) {
-                                    Text(
-                                        text = "Tamamlanmış Alışveriş Listeleri",
-                                        style = MaterialTheme.typography.headlineSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onBackground
-                                    )
-
-                                    Spacer(modifier = Modifier.height(16.dp))
-
-                                    // Özet kartı
-                                    Card(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        colors = CardDefaults.cardColors(
-                                            containerColor = MaterialTheme.colorScheme.primaryContainer
-                                        ),
-                                        shape = RoundedCornerShape(20.dp)
-                                    ) {
-                                        Row(
-                                            modifier = Modifier
-                                                .fillMaxWidth()
-                                                .padding(20.dp),
-                                            horizontalArrangement = Arrangement.SpaceBetween,
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Column {
-                                                Text(
-                                                    text = "Toplam Liste",
-                                                    style = MaterialTheme.typography.titleMedium,
-                                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                                                )
-                                                Text(
-                                                    text = completedLists.size.toString(),
-                                                    style = MaterialTheme.typography.headlineMedium,
-                                                    fontWeight = FontWeight.Bold,
-                                                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                                                )
-                                            }
-
-                                            Icon(
-                                                imageVector = Icons.Outlined.CheckCircle,
-                                                contentDescription = null,
-                                                modifier = Modifier.size(48.dp),
-                                                tint = MaterialTheme.colorScheme.onPrimaryContainer
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-
-                            items(completedLists) { list ->
-                                Card(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .clickable {
-                                            selectedCompletedList = list
-                                            showCompletedListDialog = true
-                                        },
-                                    colors = CardDefaults.cardColors(
-                                        containerColor = MaterialTheme.colorScheme.surface
-                                    ),
-                                    elevation = CardDefaults.cardElevation(
-                                        defaultElevation = 2.dp
-                                    ),
-                                    shape = RoundedCornerShape(20.dp)
-                                ) {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(20.dp),
-                                        verticalAlignment = Alignment.CenterVertically
-                                    ) {
-                                        // Liste ikonu ve durumu
-                                        Box(
-                                            modifier = Modifier
-                                                .size(48.dp)
-                                                .background(
-                                                    MaterialTheme.colorScheme.primaryContainer,
-                                                    CircleShape
-                                                ),
-                                            contentAlignment = Alignment.Center
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Outlined.CheckCircle,
-                                                contentDescription = "Completed List Icon",
-                                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                                modifier = Modifier.size(24.dp)
-                                            )
-                                        }
-
-                                        Spacer(modifier = Modifier.width(16.dp))
-
-                                        // Liste detayları
-                                        Column(
-                                            modifier = Modifier.weight(1f)
-                                        ) {
-                                            Text(
-                                                text = list.name,
-                                                style = MaterialTheme.typography.titleMedium,
-                                                fontWeight = FontWeight.SemiBold,
-                                                color = MaterialTheme.colorScheme.onSurface
-                                            )
-                                            Text(
-                                                text = list.getFormattedDate(),
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-
-
-                                        Icon(
-                                            imageVector = Icons.Default.KeyboardArrowDown,
-                                            contentDescription = "Detayları Göster",
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier
-                                                .size(24.dp)
-                                                .rotate(90f)
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-
+                    )
 
                     if (showCompletedListDialog && selectedCompletedList != null) {
                         CompletedListDialog(
                             list = selectedCompletedList!!,
                             items = shoppingListViewModel.getItemsForList(selectedCompletedList!!.id).collectAsState(initial = emptyList()).value,
                             onDismiss = {
+                                showCompletedListDialog = false
+                                selectedCompletedList = null
+                            },
+                            onDeleteList = { list ->
+                                shoppingListViewModel.deleteCompletedList(list)
                                 showCompletedListDialog = false
                                 selectedCompletedList = null
                             }
@@ -475,10 +288,57 @@ fun MainScreen(
 fun CompletedListDialog(
     list: ShoppingList,
     items: List<ShoppingListItem>,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onDeleteList: (ShoppingList) -> Unit
 ) {
     val totalCost = items.sumOf { it.price }
     val completedItems = items.count { it.isCompleted }
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
+
+    // Delete confirmation dialog
+    if (showDeleteConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmation = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Delete",
+                    tint = MaterialTheme.colorScheme.error
+                )
+            },
+            title = {
+                Text(
+                    text = "Listeyi Sil",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    text = "Bu listeyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onDeleteList(list)
+                        showDeleteConfirmation = false
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text("Sil")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirmation = false }) {
+                    Text("İptal")
+                }
+            }
+        )
+    }
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -490,153 +350,289 @@ fun CompletedListDialog(
     ) {
         Card(
             modifier = Modifier
-                .fillMaxWidth(0.9f)
+                .fillMaxWidth(0.95f)
+                .heightIn(max = 600.dp)
                 .padding(16.dp),
             shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
+            elevation = CardDefaults.cardElevation(
+                defaultElevation = 16.dp
+            )
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(24.dp)
+                modifier = Modifier.fillMaxWidth()
             ) {
-                // Header
-                Row(
+                // Modern Gradient Header
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                        .background(
+                            brush = Brush.horizontalGradient(
+                                colors = listOf(
+                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                                    MaterialTheme.colorScheme.secondary.copy(alpha = 0.6f)
+                                )
+                            ),
+                            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp)
+                        )
+                        .padding(24.dp)
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = list.name,
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = list.getFormattedDate(),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "$completedItems/${items.size} ürün alındı",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                    IconButton(onClick = onDismiss) {
-                        Icon(
-                            Icons.Default.Close,
-                            contentDescription = "Kapat",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                Divider(
-                    modifier = Modifier.padding(vertical = 12.dp),
-                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                )
-
-
-                LazyColumn(
-                    modifier = Modifier
-                        .weight(1f, fill = false)
-                        .fillMaxWidth()
-                        .padding(bottom = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(items) { item ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
                             Row(
-                                modifier = Modifier.weight(1f),
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                if (item.imageUrl.isNotEmpty()) {
-                                    AsyncImage(
-                                        model = item.imageUrl,
-                                        contentDescription = null,
-                                        modifier = Modifier
-                                            .size(48.dp)
-                                            .clip(RoundedCornerShape(8.dp)),
-                                        contentScale = ContentScale.Crop
+                                Box(
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .background(
+                                            Color.White.copy(alpha = 0.2f),
+                                            CircleShape
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.CheckCircle,
+                                        contentDescription = "Completed",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(18.dp)
                                     )
                                 }
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = item.name,
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        textDecoration = if (item.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
-                                        color = if (item.isCompleted) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                                        else MaterialTheme.colorScheme.onSurface,
-                                        maxLines = 2,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                    ) {
-                                        if (item.merchantLogo.isNotEmpty()) {
-                                            AsyncImage(
-                                                model = item.merchantLogo,
-                                                contentDescription = null,
-                                                modifier = Modifier
-                                                    .height(18.dp)
-                                                    .width(52.dp),
-                                                contentScale = ContentScale.Fit
-                                            )
-                                        }
-                                        Text(
-                                            text = "${item.quantity.toInt()} ${item.unit}",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            textDecoration = if (item.isCompleted) TextDecoration.LineThrough else TextDecoration.None
-                                        )
-                                    }
-                                }
+                                Text(
+                                    text = "Tamamlandı",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = Color.White.copy(alpha = 0.9f),
+                                    fontWeight = FontWeight.Medium
+                                )
                             }
+                            
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
                             Text(
-                                text = "${item.price.toInt()} ₺",
-                                style = MaterialTheme.typography.bodyLarge,
+                                text = list.name,
+                                style = MaterialTheme.typography.headlineMedium,
                                 fontWeight = FontWeight.Bold,
-                                textDecoration = if (item.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
-                                color = if (item.isCompleted) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                                else MaterialTheme.colorScheme.primary
+                                color = Color.White
                             )
+                            Text(
+                                text = list.getFormattedDate(),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = Color.White.copy(alpha = 0.9f)
+                            )
+                            Text(
+                                text = "$completedItems/${items.size} ürün alındı",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.White.copy(alpha = 0.8f),
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                        
+                        Column(
+                            horizontalAlignment = Alignment.End,
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            IconButton(
+                                onClick = { showDeleteConfirmation = true },
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .background(
+                                        Color.White.copy(alpha = 0.15f),
+                                        CircleShape
+                                    )
+                            ) {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = "Sil",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            
+                            IconButton(
+                                onClick = onDismiss,
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .background(
+                                        Color.White.copy(alpha = 0.15f),
+                                        CircleShape
+                                    )
+                            ) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = "Kapat",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
                         }
                     }
                 }
 
-                Divider(
-                    modifier = Modifier.padding(vertical = 12.dp),
-                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
-                )
-
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                // Content Section
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp)
                 ) {
-                    Text(
-                        text = "Toplam Tutar",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "${totalCost.toInt()} ₺",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
+                    // Items List
+                    LazyColumn(
+                        modifier = Modifier
+                            .weight(1f, fill = false)
+                            .fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        items(items) { item ->
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = if (item.isCompleted) 
+                                        MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                                    else MaterialTheme.colorScheme.surfaceVariant
+                                ),
+                                shape = RoundedCornerShape(16.dp),
+                                elevation = CardDefaults.cardElevation(
+                                    defaultElevation = 2.dp
+                                )
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(16.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(
+                                        modifier = Modifier.weight(1f),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                                    ) {
+                                        if (item.imageUrl.isNotEmpty()) {
+                                            AsyncImage(
+                                                model = item.imageUrl,
+                                                contentDescription = null,
+                                                modifier = Modifier
+                                                    .size(56.dp)
+                                                    .clip(RoundedCornerShape(12.dp))
+                                                    .alpha(if (item.isCompleted) 0.6f else 1f),
+                                                contentScale = ContentScale.Crop
+                                            )
+                                        }
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(
+                                                text = item.name,
+                                                style = MaterialTheme.typography.titleMedium,
+                                                textDecoration = if (item.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
+                                                color = if (item.isCompleted) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                                else MaterialTheme.colorScheme.onSurface,
+                                                maxLines = 2,
+                                                overflow = TextOverflow.Ellipsis,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                            
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            
+                                            Row(
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                            ) {
+                                                if (item.merchantLogo.isNotEmpty()) {
+                                                    AsyncImage(
+                                                        model = item.merchantLogo,
+                                                        contentDescription = null,
+                                                        modifier = Modifier
+                                                            .height(16.dp)
+                                                            .width(48.dp)
+                                                            .alpha(if (item.isCompleted) 0.6f else 1f),
+                                                        contentScale = ContentScale.Fit
+                                                    )
+                                                }
+                                                Text(
+                                                    text = "${item.quantity.toInt()} ${item.unit}",
+                                                    style = MaterialTheme.typography.bodyMedium,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                    textDecoration = if (item.isCompleted) TextDecoration.LineThrough else TextDecoration.None
+                                                )
+                                            }
+                                        }
+                                    }
+                                    
+                                    Column(
+                                        horizontalAlignment = Alignment.End,
+                                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                                    ) {
+                                        Text(
+                                            text = "${item.price.toInt()} ₺",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            textDecoration = if (item.isCompleted) TextDecoration.LineThrough else TextDecoration.None,
+                                            color = if (item.isCompleted) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                            else MaterialTheme.colorScheme.primary
+                                        )
+                                        
+                                        if (item.isCompleted) {
+                                            Icon(
+                                                imageVector = Icons.Filled.CheckCircle,
+                                                contentDescription = "Completed",
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Total Section
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer
+                        ),
+                        shape = RoundedCornerShape(20.dp),
+                        elevation = CardDefaults.cardElevation(
+                            defaultElevation = 4.dp
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(20.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column {
+                                Text(
+                                    text = "Toplam Tutar",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Text(
+                                    text = "${totalCost.toInt()} ₺",
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
+                            }
+                            
+                            Icon(
+                                imageVector = Icons.Filled.Analytics,
+                                contentDescription = "Total",
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                    }
                 }
             }
         }
