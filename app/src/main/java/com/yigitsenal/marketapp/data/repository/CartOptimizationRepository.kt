@@ -48,8 +48,8 @@ class CartOptimizationRepository(
                         
                         val currentTotalPrice = item.price // Bu zaten toplam fiyat (quantity dahil)
                         val potentialSavings = if (bestOffer != null) {
-                            // SIMPLE: API'deki price ile sepetteki price'ı direkt karşılaştır
-                            // Çünkü ikisi de aynı ürün için paket fiyatı
+                            //  API'deki price ile sepetteki price'ı direkt karşılaştır
+
                             val bestOfferPrice = bestOffer.price
                             
                             // Debug için log ekleyelim
@@ -251,10 +251,10 @@ class CartOptimizationRepository(
             .groupBy { it.merchantId }
             .map { (merchantId, storeInfos) ->
                 val allItems = storeInfos.flatMap { it.items }
-                // Use package price directly - no unit calculations needed
+
                 val totalCost = allItems.sumOf { item ->
                     if (item.bestOffer != null) {
-                        // Simply use the package price from API
+
                         item.bestOffer.price
                     } else {
                         0.0
@@ -330,7 +330,7 @@ class CartOptimizationRepository(
     
     private fun getMerchantLogoUrl(merchantId: String): String {
         // Local API endpoint'ini kullan - merchant ID'yi direkt logo.php'ye gönder
-        val logoUrl = "http://192.168.1.36:8000/logo.php?id=$merchantId"
+        val logoUrl = "http://10.95.3.127/logo.php?id=$merchantId"
         println("DEBUG - Logo URL for merchant '$merchantId': '$logoUrl'")
         return logoUrl
     }
@@ -379,31 +379,31 @@ class CartOptimizationRepository(
         val shoppingName = shoppingItem.name.lowercase().trim()
         val offerName = offer.name.lowercase().trim()
         
-        // 1. Exact name match (highest priority)
+
         if (shoppingName == offerName) {
             score += 100.0
             return score
         }
         
-        // 2. Brand matching (extract brand from both)
+
         val shoppingBrand = extractBrand(shoppingName)
         val offerBrand = extractBrand(offerName)
         if (shoppingBrand.isNotEmpty() && offerBrand.isNotEmpty() && shoppingBrand == offerBrand) {
             score += 50.0
         }
         
-        // 3. Main product keyword matching
+
         val shoppingKeywords = extractProductKeywords(shoppingName)
         val offerKeywords = extractProductKeywords(offerName)
         val keywordMatches = shoppingKeywords.intersect(offerKeywords).size
         val keywordScore = (keywordMatches.toDouble() / maxOf(shoppingKeywords.size, 1)) * 30.0
         score += keywordScore
         
-        // 4. Package size compatibility
+
         val sizeScore = calculateSizeCompatibility(shoppingItem, offer)
         score += sizeScore
         
-        // 5. Penalize very different product types (bundle vs single item)
+
         if (detectProductMismatch(shoppingName, offerName)) {
             score -= 50.0
         }
@@ -417,39 +417,39 @@ class CartOptimizationRepository(
     }
     
     private fun extractProductKeywords(productName: String): Set<String> {
-        // Remove brand, size, and common words to get core product keywords
+
         val cleanName = productName
-            .replace(Regex("\\d+\\s*(gr|kg|ml|lt|adet|li|lü|lu)"), "") // Remove size info
-            .replace(Regex("(lipton|arifoğlu|ülker|eti)"), "") // Remove common brands
-            .replace(Regex("\\+.*"), "") // Remove bundle info after +
+            .replace(Regex("\\d+\\s*(gr|kg|ml|lt|adet|li|lü|lu)"), "")
+            .replace(Regex("(lipton|arifoğlu|ülker|eti)"), "")
+            .replace(Regex("\\+.*"), "")
             .split("\\s+".toRegex())
             .map { it.trim() }
-            .filter { it.length > 2 && !it.matches(Regex("\\d+")) } // Remove short words and numbers
+            .filter { it.length > 2 && !it.matches(Regex("\\d+")) }
         
         return cleanName.toSet()
     }
     
     private fun calculateSizeCompatibility(shoppingItem: ShoppingListItem, offer: MarketItem): Double {
-        // Extract size from shopping item name and offer name
+
         val shoppingSize = extractSize(shoppingItem.name)
         val offerSize = extractSize(offer.name)
         
-        // If both have size info, check compatibility
+
         if (shoppingSize != null && offerSize != null) {
             val (shoppingValue, shoppingUnit) = shoppingSize
             val (offerValue, offerUnit) = offerSize
             
-            // Same unit comparison
+
             if (shoppingUnit == offerUnit) {
                 val ratio = offerValue / shoppingValue
                 return when {
-                    ratio in 0.8..1.2 -> 20.0 // Very close size
-                    ratio in 0.5..2.0 -> 10.0  // Reasonable size
-                    else -> -10.0 // Very different size
+                    ratio in 0.8..1.2 -> 20.0
+                    ratio in 0.5..2.0 -> 10.0
+                    else -> -10.0
                 }
             }
             
-            // Different unit but convertible (gr/kg, ml/lt)
+
             if ((shoppingUnit == "gr" && offerUnit == "kg") || (shoppingUnit == "kg" && offerUnit == "gr")) {
                 val normalizedShopping = if (shoppingUnit == "gr") shoppingValue / 1000 else shoppingValue
                 val normalizedOffer = if (offerUnit == "gr") offerValue / 1000 else offerValue
@@ -462,7 +462,7 @@ class CartOptimizationRepository(
             }
         }
         
-        return 0.0 // No size info available
+        return 0.0
     }
     
     private fun extractSize(productName: String): Pair<Double, String>? {
@@ -476,12 +476,12 @@ class CartOptimizationRepository(
     }
     
     private fun detectProductMismatch(shoppingName: String, offerName: String): Boolean {
-        // Detect if one is a bundle/combo and the other is single item
+
         val bundleKeywords = listOf("\\+", "combo", "set", "paket", "bundle", "tekli", "tek dem")
         val shoppingHasBundle = bundleKeywords.any { shoppingName.contains(it.toRegex(RegexOption.IGNORE_CASE)) }
         val offerHasBundle = bundleKeywords.any { offerName.contains(it.toRegex(RegexOption.IGNORE_CASE)) }
         
-        // If one is bundle and other is not, it's a mismatch
+
         return shoppingHasBundle != offerHasBundle
     }
 }

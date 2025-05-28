@@ -10,7 +10,7 @@ class ShoppingListRepository(
     private val shoppingListDao: ShoppingListDao,
     private val shoppingListItemDao: ShoppingListItemDao
 ) {
-    // Shopping List operations
+
     fun getAllShoppingLists(): Flow<List<ShoppingList>> {
         return shoppingListDao.getAllShoppingLists()
     }
@@ -31,7 +31,7 @@ class ShoppingListRepository(
         shoppingListDao.deleteShoppingList(shoppingList)
     }
     
-    // Shopping List Item operations
+
     fun getItemsForList(listId: Int): Flow<List<ShoppingListItem>> {
         return shoppingListItemDao.getItemsForList(listId)
     }

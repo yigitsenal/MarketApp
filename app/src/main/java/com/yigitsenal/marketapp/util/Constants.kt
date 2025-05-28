@@ -1,7 +1,7 @@
 package com.yigitsenal.marketapp.util
 
 object Constants {
-    const val API_BASE_URL = "http://192.168.1.36:8000"
+    const val API_BASE_URL = "http://10.95.3.127:8000"
     
     object ApiEndpoints {
         const val SEARCH = "$API_BASE_URL/api.php"

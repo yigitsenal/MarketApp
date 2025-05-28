@@ -37,7 +37,7 @@ interface MarketApiService {
     ): ProductDetailResponse
     
     companion object {
-        const val BASE_URL = "http://192.168.1.36:8000/"
+        const val BASE_URL = "http://10.95.3.127:8000/"
         const val IMAGE_URL = BASE_URL + "image.php"
 
         fun getImageUrl(fileName: String, size: String = "md"): String {
