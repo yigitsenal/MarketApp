@@ -157,11 +157,22 @@ fun MainScreen(
     var selectedCompletedList by remember { mutableStateOf<ShoppingList?>(null) }
     var showCompletedListDialog by remember { mutableStateOf(false) }
     val authState by authViewModel.authState.collectAsState()
-    
-    // Kullanıcı kimlik doğrulaması yapıldığında ShoppingListViewModel'e kullanıcı ID'sini set et
+      // Kullanıcı kimlik doğrulaması yapıldığında ShoppingListViewModel'e kullanıcı ID'sini set et
     LaunchedEffect(authState.user?.uid) {
         authState.user?.uid?.let { userId ->
             shoppingListViewModel.setUserId(userId)
+            // Firestore'dan verileri senkronize et
+            shoppingListViewModel.syncDataFromFirestore()
+        } ?: run {
+            // Kullanıcı çıkış yaptıysa shopping list verilerini temizle
+            shoppingListViewModel.setUserId("")
+        }
+    }
+    
+    // Kullanıcı çıkış yaptığında ana sayfaya yönlendir
+    LaunchedEffect(authState.isAuthenticated) {
+        if (!authState.isAuthenticated) {
+            currentScreen = Screen.HOME
         }
     }
     
@@ -305,8 +316,11 @@ fun MainScreen(
                 }                Screen.PROFILE -> {
                     ProfileScreen(
                         authViewModel = authViewModel,
+                        shoppingListViewModel = shoppingListViewModel,
                         onSignOut = { 
                             authViewModel.signOut()
+                            // ShoppingListViewModel'deki kullanıcı verilerini temizle
+                            shoppingListViewModel.setUserId("")
                             currentScreen = Screen.HOME
                         }
                     )

@@ -2,11 +2,13 @@ package com.yigitsenal.marketapp.di
 
 import android.content.Context
 import androidx.room.Room
+import com.google.firebase.firestore.FirebaseFirestore
 import com.yigitsenal.marketapp.data.local.MarketDatabase
 import com.yigitsenal.marketapp.data.local.ShoppingListDao
 import com.yigitsenal.marketapp.data.local.ShoppingListItemDao
 import com.yigitsenal.marketapp.data.local.MarketItemDao
 import com.yigitsenal.marketapp.data.dao.UserDao
+import com.yigitsenal.marketapp.data.repository.ShoppingListRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -44,5 +46,15 @@ object DatabaseModule {    @Provides
     @Provides
     fun provideUserDao(database: MarketDatabase): UserDao {
         return database.userDao()
+    }
+    
+    @Provides
+    @Singleton
+    fun provideShoppingListRepository(
+        shoppingListDao: ShoppingListDao,
+        shoppingListItemDao: ShoppingListItemDao,
+        firestore: FirebaseFirestore
+    ): ShoppingListRepository {
+        return ShoppingListRepository(shoppingListDao, shoppingListItemDao, firestore)
     }
 }

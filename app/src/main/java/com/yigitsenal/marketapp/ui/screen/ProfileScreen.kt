@@ -51,11 +51,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.yigitsenal.marketapp.data.model.User
 import com.yigitsenal.marketapp.ui.viewmodel.AuthViewModel
+import com.yigitsenal.marketapp.ui.viewmodel.ShoppingListViewModel
+import androidx.compose.material.icons.filled.Sync
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
     authViewModel: AuthViewModel,
+    shoppingListViewModel: ShoppingListViewModel? = null,
     onSignOut: () -> Unit
 ) {
     val authState by authViewModel.authState.collectAsState()
@@ -118,9 +121,7 @@ fun ProfileScreen(
                 userName =  authState.user?.displayName ?: "Kullanıcı Adı",
                 userEmail = authState.user?.email ?: ""
             )
-        }
-
-        // Settings Options
+        }        // Settings Options
         item {
             SettingsSection(
                 title = "Hesap Ayarları",
@@ -130,6 +131,14 @@ fun ProfileScreen(
                         title = "Profil Bilgileri",
                         subtitle = "Kişisel bilgilerinizi düzenleyin",
                         onClick = { /* TODO: Navigate to profile edit */ }
+                    ),
+                    SettingItem(
+                        icon = Icons.Default.Sync,
+                        title = "Verileri Senkronize Et",
+                        subtitle = "Alışveriş listelerinizi buluttan senkronize edin",
+                        onClick = { 
+                            shoppingListViewModel?.syncDataFromFirestore()
+                        }
                     ),
                     SettingItem(
                         icon = Icons.Default.Notifications,

@@ -90,6 +90,9 @@ class ShoppingListViewModel @Inject constructor(
             // UserId değiştiğinde listeleri kontrol et
             _userId.collect { userId ->
                 if (userId != null) {
+                    // Firestore'dan verileri senkronize et
+                    repository.syncShoppingListsFromFirestore(userId)
+                    
                     // UserId set edildikten sonra listeleri kontrol et
                     allShoppingLists.first().let { lists ->
                         if (lists.isEmpty()) {
@@ -100,6 +103,13 @@ class ShoppingListViewModel @Inject constructor(
                             if (currentActiveList == null || currentActiveList.userId != userId) {
                                 _activeShoppingList.value = lists.first()
                             }
+                            
+                            // Tüm listelerin öğelerini senkronize et
+                            lists.forEach { shoppingList ->
+                                viewModelScope.launch {
+                                    repository.syncShoppingListItemsFromFirestore(userId, shoppingList.id)
+                                }
+                            }
                         }
                     }
                 } else {
@@ -109,10 +119,25 @@ class ShoppingListViewModel @Inject constructor(
             }
         }
     }
-    
-    // Kullanıcı ID'sini ayarla
+      // Kullanıcı ID'sini ayarla
     fun setUserId(userId: String) {
-        _userId.value = userId
+        _userId.value = if (userId.isBlank()) null else userId
+    }
+      // Firestore'dan verileri manuel olarak senkronize et
+    fun syncDataFromFirestore() {
+        viewModelScope.launch {
+            val userId = _userId.value
+            if (userId != null) {
+                // Önce tüm listeleri senkronize et
+                repository.syncShoppingListsFromFirestore(userId)
+                
+                // Sonra tüm listelerin öğelerini senkronize et
+                allShoppingLists.first().forEach { shoppingList ->
+                    repository.syncShoppingListItemsFromFirestore(userId, shoppingList.id)
+                }
+       
+            }
+        }
     }
       fun createNewShoppingList(name: String) {
         viewModelScope.launch {
@@ -275,10 +300,10 @@ class ShoppingListViewModel @Inject constructor(
             }
         }
     }
-    
-    fun toggleItemCompletion(item: ShoppingListItem) {
+      fun toggleItemCompletion(item: ShoppingListItem) {
         viewModelScope.launch {
-            repository.updateItemCompletionStatus(item.id, !item.isCompleted)
+            val currentUserId = _userId.value
+            repository.updateItemCompletionStatus(item.id, !item.isCompleted, currentUserId)
         }
     }
     

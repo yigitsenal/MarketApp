@@ -42,13 +42,17 @@ class AuthViewModel @Inject constructor(
                 user = null
             )
         }
-    }
-
-    fun signOut() {
+    }    fun signOut() {
         viewModelScope.launch {
             try {
                 authRepository.signOut()
-                _authState.value = AuthState(isAuthenticated = false, user = null)
+                // State'i temizle
+                _authState.value = AuthState(
+                    isAuthenticated = false, 
+                    user = null,
+                    isLoading = false,
+                    error = null
+                )
             } catch (e: Exception) {
                 _authState.value = _authState.value.copy(
                     error = e.message

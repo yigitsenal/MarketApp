@@ -14,6 +14,9 @@ interface ShoppingListItemDao {
     @Query("SELECT * FROM shopping_list_items WHERE listId = :listId")
     fun getItemsForList(listId: Int): Flow<List<ShoppingListItem>>
     
+    @Query("SELECT * FROM shopping_list_items WHERE listId = :listId")
+    suspend fun getItemsForListSync(listId: Int): List<ShoppingListItem>
+    
     @Query("SELECT * FROM shopping_list_items WHERE id = :id")
     suspend fun getItemById(id: Int): ShoppingListItem?
     
@@ -28,4 +31,4 @@ interface ShoppingListItemDao {
     
     @Query("UPDATE shopping_list_items SET isCompleted = :isCompleted WHERE id = :id")
     suspend fun updateItemCompletionStatus(id: Int, isCompleted: Boolean)
-} 
+}
