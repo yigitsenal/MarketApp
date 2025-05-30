@@ -9,14 +9,12 @@ import kotlinx.coroutines.flow.Flow
 class ShoppingListRepository(
     private val shoppingListDao: ShoppingListDao,
     private val shoppingListItemDao: ShoppingListItemDao
-) {
-
-    fun getAllShoppingLists(): Flow<List<ShoppingList>> {
-        return shoppingListDao.getAllShoppingLists()
+) {    fun getAllShoppingLists(userId: String): Flow<List<ShoppingList>> {
+        return shoppingListDao.getAllShoppingLists(userId)
     }
     
-    suspend fun getShoppingListById(id: Int): ShoppingList? {
-        return shoppingListDao.getShoppingListById(id)
+    suspend fun getShoppingListById(id: Int, userId: String): ShoppingList? {
+        return shoppingListDao.getShoppingListById(id, userId)
     }
     
     suspend fun insertShoppingList(shoppingList: ShoppingList): Long {

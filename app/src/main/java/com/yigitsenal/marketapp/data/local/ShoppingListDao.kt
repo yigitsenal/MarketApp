@@ -11,11 +11,11 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface ShoppingListDao {
-    @Query("SELECT * FROM shopping_lists ORDER BY date DESC")
-    fun getAllShoppingLists(): Flow<List<ShoppingList>>
+    @Query("SELECT * FROM shopping_lists WHERE userId = :userId ORDER BY date DESC")
+    fun getAllShoppingLists(userId: String): Flow<List<ShoppingList>>
     
-    @Query("SELECT * FROM shopping_lists WHERE id = :id")
-    suspend fun getShoppingListById(id: Int): ShoppingList?
+    @Query("SELECT * FROM shopping_lists WHERE id = :id AND userId = :userId")
+    suspend fun getShoppingListById(id: Int, userId: String): ShoppingList?
     
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertShoppingList(shoppingList: ShoppingList): Long

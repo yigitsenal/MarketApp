@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     id("org.jetbrains.kotlin.kapt")
+    id("com.google.gms.google-services")
+    id("dagger.hilt.android.plugin")
 }
 
 android {
@@ -66,10 +68,22 @@ dependencies {
 
     // Paging3
     implementation(libs.androidx.paging.runtime)
-    implementation(libs.androidx.paging.compose)
-
-    // MPAndroidChart - Grafik çizimi için
+    implementation(libs.androidx.paging.compose)    // MPAndroidChart - Grafik çizimi için
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
+
+    // Firebase dependencies
+    implementation(platform("com.google.firebase:firebase-bom:32.7.1"))
+    implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-firestore-ktx")
+    implementation("com.google.firebase:firebase-analytics-ktx")
+      // Google Sign In
+    implementation("com.google.android.gms:play-services-auth:20.7.0")    // Hilt dependencies
+    implementation("com.google.dagger:hilt-android:2.48")
+    kapt("com.google.dagger:hilt-compiler:2.48")
+    implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
+    
+    // Navigation Compose
+    implementation("androidx.navigation:navigation-compose:2.7.5")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

@@ -2,13 +2,14 @@ package com.yigitsenal.marketapp.ui.viewmodel
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.yigitsenal.marketapp.data.model.MarketItem
 import com.yigitsenal.marketapp.data.model.ShoppingList
 import com.yigitsenal.marketapp.data.model.ShoppingListItem
 import com.yigitsenal.marketapp.data.repository.ShoppingListRepository
 import com.yigitsenal.marketapp.util.Constants
+import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -22,10 +23,16 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.Date
+import javax.inject.Inject
 
-class ShoppingListViewModel(
+@HiltViewModel
+class ShoppingListViewModel @Inject constructor(
     private val repository: ShoppingListRepository
 ) : ViewModel() {
+    
+    // Aktif kullanıcı ID'si
+    private val _userId = MutableStateFlow<String?>(null)
+    val userId: StateFlow<String?> = _userId
     
     private val _activeShoppingList = MutableStateFlow<ShoppingList?>(null)
     val activeShoppingList: StateFlow<ShoppingList?> = _activeShoppingList
@@ -33,13 +40,17 @@ class ShoppingListViewModel(
     // Optimizasyon tetikleme için callback
     private var onListChangedCallback: ((Int) -> Unit)? = null
     
-    // Tüm alışveriş listeleri
-    val allShoppingLists = repository.getAllShoppingLists()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
+    // Tüm alışveriş listeleri - userId'ye göre filtreleme
+    val allShoppingLists = _userId.flatMapLatest { userId ->
+        if (userId != null) {
+            repository.getAllShoppingLists(userId)
+        } else {
+            flowOf(emptyList())
+        }    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = emptyList()
+    )
     
     // Aktif listedeki öğeler - flatMapLatest kullanarak aktif liste değiştiğinde otomatik güncelleme
     val activeListItems: StateFlow<List<ShoppingListItem>> = _activeShoppingList
@@ -74,28 +85,48 @@ class ShoppingListViewModel(
     
     private val _isSelectionMode = MutableStateFlow(false)
     val isSelectionMode: StateFlow<Boolean> = _isSelectionMode
-    
     init {
         viewModelScope.launch {
-            repository.getAllShoppingLists().collect { lists ->
-                if (lists.isEmpty()) {
-                    createNewShoppingList("Alışveriş Listem")
-                } else if (_activeShoppingList.value == null) {
-                    _activeShoppingList.value = lists.first()
+            // UserId değiştiğinde listeleri kontrol et
+            _userId.collect { userId ->
+                if (userId != null) {
+                    // UserId set edildikten sonra listeleri kontrol et
+                    allShoppingLists.first().let { lists ->
+                        if (lists.isEmpty()) {
+                            createNewShoppingList("Alışveriş Listem")
+                        } else {
+                            // Mevcut aktif liste farklı kullanıcıya aitse null yap
+                            val currentActiveList = _activeShoppingList.value
+                            if (currentActiveList == null || currentActiveList.userId != userId) {
+                                _activeShoppingList.value = lists.first()
+                            }
+                        }
+                    }
+                } else {
+                    // UserId null ise aktif listeyi de temizle
+                    _activeShoppingList.value = null
                 }
             }
         }
     }
     
-    fun createNewShoppingList(name: String) {
+    // Kullanıcı ID'sini ayarla
+    fun setUserId(userId: String) {
+        _userId.value = userId
+    }
+      fun createNewShoppingList(name: String) {
         viewModelScope.launch {
-            val newList = ShoppingList(
-                name = name,
-                date = Date().time,
-                isCompleted = false
-            )
-            val id = repository.insertShoppingList(newList)
-            _activeShoppingList.value = newList.copy(id = id.toInt())
+            val userId = _userId.value
+            if (userId != null) {
+                val newList = ShoppingList(
+                    name = name,
+                    date = Date().time,
+                    isCompleted = false,
+                    userId = userId
+                )
+                val id = repository.insertShoppingList(newList)
+                _activeShoppingList.value = newList.copy(id = id.toInt())
+            }
         }
     }
     
@@ -123,11 +154,32 @@ class ShoppingListViewModel(
                 notifyListChanged()
             }
         }
-    }
-    
-    // Market ürününden yeni öğe ekle
+    }    // Market ürününden yeni öğe ekle
     fun addItemFromMarket(marketItem: MarketItem) {
         viewModelScope.launch {
+            // Aktif alışveriş listesi yoksa yeni bir tane oluştur
+            var activeList = _activeShoppingList.value
+            if (activeList == null) {
+                val userId = _userId.value
+                if (userId != null) {
+                    val newListJob = async {
+                        createNewShoppingList("Alışveriş Listem")
+                    }
+                    newListJob.await()
+                    // Yeni oluşturulan listeyi al
+                    activeList = _activeShoppingList.value
+                } else {
+                    Log.e("ShoppingListViewModel", "UserId is null, cannot create shopping list")
+                    return@launch
+                }
+            }
+            
+            // Hala null ise hata
+            if (activeList == null) {
+                Log.e("ShoppingListViewModel", "Could not create or get active shopping list")
+                return@launch
+            }
+
             // Görsel URL'lerini düzenle
             val imageUrl = when {
                 marketItem.image.startsWith("/") -> "${Constants.API_BASE_URL}${marketItem.image}"
@@ -165,7 +217,7 @@ class ShoppingListViewModel(
             } else {
                 // Farklı mağazadan veya yeni ürünse yeni satır olarak ekle
                 val newItem = ShoppingListItem(
-                    listId = _activeShoppingList.value?.id ?: 0,
+                    listId = activeList.id,
                     name = marketItem.name,
                     quantity = 1.0,
                     unit = "adet",
@@ -336,15 +388,5 @@ class ShoppingListViewModel(
         _activeShoppingList.value?.let { list ->
             onListChangedCallback?.invoke(list.id)
         }
-    }
-}
-
-class ShoppingListViewModelFactory(private val repository: ShoppingListRepository) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(ShoppingListViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return ShoppingListViewModel(repository) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

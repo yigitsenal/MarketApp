@@ -9,12 +9,15 @@ import androidx.paging.cachedIn
 import com.yigitsenal.marketapp.data.model.MarketItem
 import com.yigitsenal.marketapp.data.model.ProductDetailResponse
 import com.yigitsenal.marketapp.data.repository.MarketRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class ProductSearchViewModel(private val repository: MarketRepository) : ViewModel() {
+@HiltViewModel
+class ProductSearchViewModel @Inject constructor(private val repository: MarketRepository) : ViewModel() {
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery
 

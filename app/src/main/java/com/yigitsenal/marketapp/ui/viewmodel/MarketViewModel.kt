@@ -2,7 +2,6 @@ package com.yigitsenal.marketapp.ui.viewmodel
 
 import android.util.Log
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.yigitsenal.marketapp.data.model.MarketItem
 import com.yigitsenal.marketapp.data.model.Offer
@@ -11,6 +10,7 @@ import com.yigitsenal.marketapp.data.network.PriceHistoryEntry
 import com.yigitsenal.marketapp.data.network.PricePredictionApiService
 import com.yigitsenal.marketapp.data.network.PricePredictionResult
 import com.yigitsenal.marketapp.data.repository.MarketRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
@@ -20,8 +20,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.update
 import java.util.regex.Pattern
+import javax.inject.Inject
 
-class MarketViewModel(private val repository: MarketRepository) : ViewModel() {
+@HiltViewModel
+class MarketViewModel @Inject constructor(private val repository: MarketRepository) : ViewModel() {
 
     private val _uiState = MutableStateFlow<MarketUiState>(MarketUiState.Loading)
     val uiState: StateFlow<MarketUiState> = _uiState
@@ -428,16 +430,3 @@ sealed class MarketUiState {
     data class Error(val message: String) : MarketUiState()
 }
 
-class MarketViewModelFactory(private val repository: MarketRepository) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(MarketViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return MarketViewModel(repository) as T
-        }
-        if (modelClass.isAssignableFrom(ProductSearchViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return ProductSearchViewModel(repository) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
-    }
-}

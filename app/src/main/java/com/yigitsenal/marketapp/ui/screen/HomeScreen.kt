@@ -80,7 +80,8 @@ fun HomeScreen(
     allLists: List<ShoppingList>,
     onNavigateToSearch: () -> Unit,
     onNavigateToCart: () -> Unit,
-    onListClick: (ShoppingList) -> Unit
+    onListClick: (ShoppingList) -> Unit,
+    userName: String? = null
 ) {
     var animationDelay by remember { mutableStateOf(0L) }
     
@@ -120,9 +121,8 @@ fun HomeScreen(
             AnimatedVisibility(
                 visible = animationDelay > 0,
                 enter = fadeIn(tween(500)) + slideInVertically(tween(500)),
-                exit = fadeOut()
-            ) {
-                WelcomeHeader()
+                exit = fadeOut()            ) {
+                WelcomeHeader(userName = userName)
             }
         }
         
@@ -204,13 +204,17 @@ fun HomeScreen(
 }
 
 @Composable
-private fun WelcomeHeader() {
+private fun WelcomeHeader(userName: String? = null) {
     val currentHour = remember { java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY) }
+    
+    // Extract first name from full name
+    val firstName = userName?.split(" ")?.firstOrNull() ?: userName
+    
     val greeting = when (currentHour) {
-        in 6..11 -> "Günaydın! ☀️"
-        in 12..17 -> "İyi günler! 🌤️"
-        in 18..21 -> "İyi akşamlar! 🌆"
-        else -> "İyi geceler! 🌙"
+        in 6..11 -> if (firstName != null) "Günaydın $firstName! ☀️" else "Günaydın! ☀️"
+        in 12..17 -> if (firstName != null) "İyi günler $firstName! 🌤️" else "İyi günler! 🌤️"
+        in 18..21 -> if (firstName != null) "İyi akşamlar $firstName! 🌆" else "İyi akşamlar! 🌆"
+        else -> if (firstName != null) "İyi geceler $firstName! 🌙" else "İyi geceler! 🌙"
     }
     
     Card(

@@ -3,7 +3,9 @@ package com.yigitsenal.marketapp
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +14,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -20,21 +23,25 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.ShoppingCart
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -44,7 +51,9 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,120 +61,110 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModelProvider
-import coil.ImageLoader
-import coil.ImageLoaderFactory
-import coil.annotation.ExperimentalCoilApi
-import coil.compose.AsyncImage
-import coil.request.CachePolicy
-import coil.util.DebugLogger
-import com.yigitsenal.marketapp.data.model.ShoppingList
-import com.yigitsenal.marketapp.data.model.ShoppingListItem
-import com.yigitsenal.marketapp.ui.screen.HomeScreen
-import com.yigitsenal.marketapp.ui.screen.MarketScreen
-import com.yigitsenal.marketapp.ui.screen.ShoppingListScreen
-import com.yigitsenal.marketapp.ui.theme.MarketAppTheme
-import com.yigitsenal.marketapp.ui.theme.PrimaryColor
-import com.yigitsenal.marketapp.ui.viewmodel.MarketViewModel
-import com.yigitsenal.marketapp.ui.viewmodel.ShoppingListViewModel
-import com.yigitsenal.marketapp.ui.viewmodel.CartOptimizationViewModel
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.material.icons.filled.Analytics
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TextButton
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.Brush
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.compose.rememberNavController
+import coil.compose.AsyncImage
+import com.yigitsenal.marketapp.data.model.ShoppingList
+import com.yigitsenal.marketapp.data.model.ShoppingListItem
+import com.yigitsenal.marketapp.data.model.User
+import com.yigitsenal.marketapp.navigation.AuthNavGraph
+import com.yigitsenal.marketapp.ui.screen.HomeScreen
+import com.yigitsenal.marketapp.ui.screen.MarketScreen
+import com.yigitsenal.marketapp.ui.screen.ProfileScreen
+import com.yigitsenal.marketapp.ui.screen.ShoppingListScreen
+import com.yigitsenal.marketapp.ui.theme.MarketAppTheme
+import com.yigitsenal.marketapp.ui.viewmodel.AuthViewModel
+import com.yigitsenal.marketapp.ui.viewmodel.CartOptimizationViewModel
+import com.yigitsenal.marketapp.ui.viewmodel.MarketViewModel
+import com.yigitsenal.marketapp.ui.viewmodel.ShoppingListViewModel
+import dagger.hilt.android.AndroidEntryPoint
 
-@OptIn(ExperimentalCoilApi::class)
-class MainActivity : ComponentActivity(), ImageLoaderFactory {
-    private lateinit var marketViewModel: MarketViewModel
-    private lateinit var shoppingListViewModel: ShoppingListViewModel
-    private lateinit var cartOptimizationViewModel: CartOptimizationViewModel
-    private lateinit var marketViewModelFactory: ViewModelProvider.Factory
-    private lateinit var shoppingListViewModelFactory: ViewModelProvider.Factory
-    private lateinit var cartOptimizationViewModelFactory: ViewModelProvider.Factory
-
+@AndroidEntryPoint
+class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        // Get the AppContainer from the Application
-        val appContainer = (application as MarketApplication).container
-        marketViewModelFactory = appContainer.marketViewModelFactory
-        shoppingListViewModelFactory = appContainer.shoppingListViewModelFactory
-        cartOptimizationViewModelFactory = appContainer.cartOptimizationViewModelFactory
-
+        
         setContent {
-            val systemInDarkTheme = isSystemInDarkTheme()
-            
-            // Apply theme with proper dark mode support
-            MarketAppTheme(darkTheme = systemInDarkTheme) {
-                marketViewModel = ViewModelProvider(this, marketViewModelFactory)[MarketViewModel::class.java]
-                shoppingListViewModel = ViewModelProvider(this, shoppingListViewModelFactory)[ShoppingListViewModel::class.java]
-                cartOptimizationViewModel = ViewModelProvider(this, cartOptimizationViewModelFactory)[CartOptimizationViewModel::class.java]
-
-                // Otomatik optimizasyon için callback kurulumu
-                shoppingListViewModel.setOnListChangedCallback { listId ->
-                    if (cartOptimizationViewModel.uiState.value.isAutoOptimizationEnabled) {
-                        cartOptimizationViewModel.optimizeCart(listId)
-                    }
-                }
-
+            MarketAppTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    MainScreen(
-                        marketViewModel = marketViewModel,
-                        shoppingListViewModel = shoppingListViewModel,
-                        cartOptimizationViewModel = cartOptimizationViewModel
-                    )
+                    val authViewModel: AuthViewModel = hiltViewModel()
+                    val authState by authViewModel.authState.collectAsState()
+                    
+                    if (authState.isAuthenticated) {
+                        // Show main app content
+                        MainAppContent()
+                    } else {
+                        // Show authentication flow
+                        val navController = rememberNavController()
+                        AuthNavGraph(
+                            navController = navController,
+                            onLoginSuccess = {
+                                authViewModel.refreshAuthState()
+                            }
+                        )
+                    }
                 }
             }
         }
     }
+}
 
-    override fun newImageLoader(): ImageLoader {
-        return ImageLoader.Builder(this)
-            .memoryCachePolicy(CachePolicy.DISABLED)
-            .diskCachePolicy(CachePolicy.DISABLED)
-            .logger(DebugLogger())
-            .respectCacheHeaders(false)
-            .build()
-    }
+@Composable
+fun MainAppContent() {
+    val marketViewModel: MarketViewModel = hiltViewModel()
+    val shoppingListViewModel: ShoppingListViewModel = hiltViewModel()
+    val cartOptimizationViewModel: CartOptimizationViewModel = hiltViewModel()
+    val authViewModel: AuthViewModel = hiltViewModel()
+
+    MainScreen(
+        marketViewModel = marketViewModel,
+        shoppingListViewModel = shoppingListViewModel,
+        cartOptimizationViewModel = cartOptimizationViewModel,
+        authViewModel = authViewModel
+    )
 }
 
 enum class Screen {
     HOME,
     SEARCH,
-    CART
+    CART,
+    PROFILE
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     marketViewModel: MarketViewModel,
     shoppingListViewModel: ShoppingListViewModel,
-    cartOptimizationViewModel: CartOptimizationViewModel
-) {
+    cartOptimizationViewModel: CartOptimizationViewModel,
+    authViewModel: AuthViewModel
+) {    
     var currentScreen by remember { mutableStateOf(Screen.HOME) }
     var selectedCompletedList by remember { mutableStateOf<ShoppingList?>(null) }
     var showCompletedListDialog by remember { mutableStateOf(false) }
-
+    val authState by authViewModel.authState.collectAsState()
+    
+    // Kullanıcı kimlik doğrulaması yapıldığında ShoppingListViewModel'e kullanıcı ID'sini set et
+    LaunchedEffect(authState.user?.uid) {
+        authState.user?.uid?.let { userId ->
+            shoppingListViewModel.setUserId(userId)
+        }
+    }
+    
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
@@ -195,10 +194,10 @@ fun MainScreen(
                     icon = {
                         Icon(
                             if (currentScreen == Screen.SEARCH) Icons.Filled.Search else Icons.Outlined.Search,
-                            contentDescription = "Ürün Arama"
+                            contentDescription = "Arama"
                         )
                     },
-                    label = { Text("Ürün Arama") },
+                    label = { Text("Arama") },
                     selected = currentScreen == Screen.SEARCH,
                     onClick = { currentScreen = Screen.SEARCH },
                     colors = NavigationBarItemDefaults.colors(
@@ -227,15 +226,36 @@ fun MainScreen(
                         indicatorColor = MaterialTheme.colorScheme.primaryContainer
                     )
                 )
+                NavigationBarItem(
+                    icon = {
+                        Icon(
+                            if (currentScreen == Screen.PROFILE) Icons.Filled.Person else Icons.Outlined.Person,
+                            contentDescription = "Profil"
+                        )
+                    },
+                    label = { Text("Profil") },
+                    selected = currentScreen == Screen.PROFILE,
+                    onClick = { currentScreen = Screen.PROFILE },
+                    colors = NavigationBarItemDefaults.colors(
+                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                        unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                        unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        indicatorColor = MaterialTheme.colorScheme.primaryContainer
+                    )
+                )
             }
         }
-    ) { innerPadding ->
-        Surface(modifier = Modifier.fillMaxSize().padding(innerPadding), color = MaterialTheme.colorScheme.background) {
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
             when (currentScreen) {
                 Screen.HOME -> {
                     val allLists by shoppingListViewModel.allShoppingLists.collectAsState()
-                    
-                    HomeScreen(
+                HomeScreen(
                         allLists = allLists,
                         onNavigateToSearch = { currentScreen = Screen.SEARCH },
                         onNavigateToCart = { currentScreen = Screen.CART },
@@ -248,7 +268,8 @@ fun MainScreen(
                                 shoppingListViewModel.setActiveShoppingList(list)
                                 currentScreen = Screen.CART
                             }
-                        }
+                        },
+                        userName = authState.user?.displayName
                     )
 
                     if (showCompletedListDialog && selectedCompletedList != null) {
@@ -274,13 +295,20 @@ fun MainScreen(
                         onBackPressed = { currentScreen = Screen.HOME },
                         shoppingListViewModel = shoppingListViewModel
                     )
-                }
-                Screen.CART -> {
+                }                Screen.CART -> {
                     ShoppingListScreen(
                         viewModel = shoppingListViewModel,
                         cartOptimizationViewModel = cartOptimizationViewModel,
                         onNavigateToMarket = { currentScreen = Screen.SEARCH },
                         modifier = Modifier
+                    )
+                }                Screen.PROFILE -> {
+                    ProfileScreen(
+                        authViewModel = authViewModel,
+                        onSignOut = { 
+                            authViewModel.signOut()
+                            currentScreen = Screen.HOME
+                        }
                     )
                 }
             }

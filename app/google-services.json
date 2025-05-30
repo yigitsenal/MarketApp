@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "875013329441",
+    "project_id": "pricewise-7f1e7",
+    "storage_bucket": "pricewise-7f1e7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:875013329441:android:a4c5280321ae011a420960",
+        "android_client_info": {
+          "package_name": "com.yigitsenal.marketapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "875013329441-42l75k51t2697lgv2c3vjad28oebkoe6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCz0wSZfrxp1O1wnUjTbsV7P6zn_DynGkA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "875013329441-42l75k51t2697lgv2c3vjad28oebkoe6.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

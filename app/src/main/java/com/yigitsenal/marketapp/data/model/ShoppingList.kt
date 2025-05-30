@@ -12,7 +12,8 @@ data class ShoppingList(
     val id: Int = 0,
     val name: String,
     val date: Long = System.currentTimeMillis(),
-    val isCompleted: Boolean = false
+    val isCompleted: Boolean = false,
+    val userId: String = "" // Kullanıcıya özel listeler için
 ) {
     fun getFormattedDate(): String {
         val dateFormat = SimpleDateFormat("dd MMMM yyyy", Locale("tr"))

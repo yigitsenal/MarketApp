@@ -1,14 +1,15 @@
 package com.yigitsenal.marketapp.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.yigitsenal.marketapp.data.model.StoreOptimization
 import com.yigitsenal.marketapp.data.repository.CartOptimizationRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 data class OptimizationUiState(
     val isLoading: Boolean = false,
@@ -17,7 +18,8 @@ data class OptimizationUiState(
     val isAutoOptimizationEnabled: Boolean = true
 )
 
-class CartOptimizationViewModel(
+@HiltViewModel
+class CartOptimizationViewModel @Inject constructor(
     private val repository: CartOptimizationRepository
 ) : ViewModel() {
     
@@ -79,19 +81,6 @@ class CartOptimizationViewModel(
         currentListId = null
     }
     
-    fun dismissError() {
-        _uiState.value = _uiState.value.copy(error = null)
-    }
-}
-
-class CartOptimizationViewModelFactory(
-    private val repository: CartOptimizationRepository
-) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(CartOptimizationViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return CartOptimizationViewModel(repository) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
+    fun dismissError() {        _uiState.value = _uiState.value.copy(error = null)
     }
 }
